@@ -14,13 +14,16 @@
         .slider-container {
             margin: 10px;
         }
-     canvas {
-    width: 100% !important;   /* Makes graph take full width */
-    height: auto !important;  /* Adjusts height automatically */
-    max-height: 80vh;         /* Limits height to 80% of screen */
-    margin: auto;
-}
-
+        .chart-container {
+            width: 90%; /* Makes graph responsive */
+            max-width: 900px; /* Limits max width */
+            margin: auto;
+        }
+        canvas {
+            width: 100% !important; /* Auto-adjusts width */
+            height: auto !important; /* Auto-adjusts height */
+            max-height: 80vh; /* Keeps height within 80% of screen */
+        }
     </style>
 </head>
 <body>
@@ -31,23 +34,25 @@
     <!-- Sliders -->
     <div class="slider-container">
         <label>Drag Coefficient (Cd): <span id="cdValue">1.0</span></label>
-        <input type="range" id="cdSlider" min="0.1" max="1" step="0.1" value="1.0">
+        <input type="range" id="cdSlider" min="0.2" max="1.5" step="0.01" value="1.0">
     </div>
 
     <div class="slider-container">
         <label>Front Surface Area (m²): <span id="areaValue">1.0</span></label>
-        <input type="range" id="areaSlider" min="0.1" max="2.0" step="0.1" value="1.0">
+        <input type="range" id="areaSlider" min="0.5" max="5.0" step="0.1" value="1.0">
     </div>
 
     <div class="slider-container">
         <label>Velocity (m/s): <span id="velocityValue">10</span></label>
-        <input type="range" id="velocitySlider" min="0" max="15" step="0.5" value="10">
+        <input type="range" id="velocitySlider" min="1" max="20" step="0.1" value="10">
     </div>
 
     <h3>Calculated Drag Force: <span id="dragForce">0</span> N</h3>
 
-    <!-- Graph -->
-    <canvas id="dragChart"></canvas>
+    <!-- Graph Container -->
+    <div class="chart-container">
+        <canvas id="dragChart"></canvas>
+    </div>
 
     <script>
         // Constants
@@ -74,7 +79,7 @@
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: Array.from({ length: 20 }, (_, i) => i + 1), // Velocity from 1 to 20 m/s
+                labels: Array.from({ length: 16 }, (_, i) => i), // X-axis: 0 to 15
                 datasets: [{
                     label: "Drag Force (N)",
                     data: [],
@@ -87,10 +92,10 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // Allows independent width & height
                 plugins: {
                     tooltip: {
-                        enabled: true, // Enables hover tooltips
+                        enabled: true,
                         mode: "nearest",
                         intersect: false,
                         callbacks: {
@@ -101,17 +106,18 @@
                     }
                 },
                 scales: {
-        x: { 
-            title: { display: true, text: "Velocity (m/s)" }, 
-            min: 0,  
-            max: 15,  
-            ticks: { stepSize: 1 }
-        },
-        y: { 
-            title: { display: true, text: "Drag Force (N)" }
-        }
-    }
-};
+                    x: { 
+                        title: { display: true, text: "Velocity (m/s)" },
+                        min: 0,  // ✅ X-axis starts at 0
+                        max: 15, // ✅ X-axis ends at 15
+                        ticks: { stepSize: 1 } // ✅ X-axis interval is 1
+                    },
+                    y: { 
+                        title: { display: true, text: "Drag Force (N)" }
+                    }
+                }
+            }
+        });
 
         // Function to update values and chart
         function updateSimulation() {
@@ -130,7 +136,7 @@
             dragForceDisplay.textContent = dragForce.toFixed(2);
 
             // Update chart data
-            dragChart.data.datasets[0].data = Array.from({ length: 20 }, (_, i) => calculateDrag(Cd, A, i + 1));
+            dragChart.data.datasets[0].data = Array.from({ length: 16 }, (_, i) => calculateDrag(Cd, A, i));
             dragChart.update();
         }
 
