@@ -99,7 +99,12 @@
                     }
                 },
                 scales: {
-                    x: { title: { display: true, text: "Velocity (m/s)" } },
+                    x: { title: { display: true, text: "Velocity (m/s)" } 
+                       min: 0,   // ✅ Start at 0
+        max: 15,  // ✅ End at 15
+        ticks: {
+            stepSize: 1  // ✅ Interval of 1
+        }},
                     y: { title: { display: true, text: "Drag Force (N)" } }
                 }
             }
