@@ -14,11 +14,13 @@
         .slider-container {
             margin: 10px;
         }
-        canvas {
-            max-width: 800px; /* Adjusted for better fit */
-            max-height: 500px;
-            margin: auto;
-        }
+     canvas {
+    width: 100% !important;   /* Makes graph take full width */
+    height: auto !important;  /* Adjusts height automatically */
+    max-height: 80vh;         /* Limits height to 80% of screen */
+    margin: auto;
+}
+
     </style>
 </head>
 <body>
@@ -99,16 +101,17 @@
                     }
                 },
                 scales: {
-                    x: { title: { display: true, text: "Velocity (m/s)" } 
-                       min: 0,   // ✅ Start at 0
-        max: 15,  // ✅ End at 15
-        ticks: {
-            stepSize: 1  // ✅ Interval of 1
-        }},
-                    y: { title: { display: true, text: "Drag Force (N)" } }
-                }
-            }
-        });
+        x: { 
+            title: { display: true, text: "Velocity (m/s)" }, 
+            min: 0,  
+            max: 15,  
+            ticks: { stepSize: 1 }
+        },
+        y: { 
+            title: { display: true, text: "Drag Force (N)" }
+        }
+    }
+};
 
         // Function to update values and chart
         function updateSimulation() {
