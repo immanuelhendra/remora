@@ -34,7 +34,7 @@
     <!-- Sliders -->
     <div class="slider-container">
         <label>Drag Coefficient (Cd): <span id="cdValue">1.0</span></label>
-        <input type="range" id="cdSlider" min="0.1" max="1" step="0.01" value="1.0">
+        <input type="range" id="cdSlider" min="0.1" max="1" step="0.01" value="0.8">
     </div>
 
     <div class="slider-container">
@@ -47,7 +47,12 @@
         <input type="range" id="velocitySlider" min="0" max="15" step="0.1" value="10">
     </div>
 
-    <h3>Calculated Drag Force: <span id="dragForce">0</span> N</h3>
+    <div class="slider-container">
+        <label>Number of Units: <span id="unitValue">1</span></label>
+        <input type="number" id="unitInput" min="1" max="100" step="1" value="10">
+    </div>
+
+    <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
 
     <!-- Graph Container -->
     <div class="chart-container">
@@ -58,18 +63,20 @@
         // Constants
         const rho = 1025; // Water density (kg/m³)
 
-        // Get slider elements
+        // Get input elements
         const cdSlider = document.getElementById("cdSlider");
         const areaSlider = document.getElementById("areaSlider");
         const velocitySlider = document.getElementById("velocitySlider");
+        const unitInput = document.getElementById("unitInput");
 
         // Get display elements
         const cdValue = document.getElementById("cdValue");
         const areaValue = document.getElementById("areaValue");
         const velocityValue = document.getElementById("velocityValue");
+        const unitValue = document.getElementById("unitValue");
         const dragForceDisplay = document.getElementById("dragForce");
 
-        // Function to calculate drag force
+        // Function to calculate drag force per unit
         function calculateDrag(Cd, A, v) {
             return 0.5 * Cd * rho * A * v ** 2;
         }
@@ -81,7 +88,7 @@
             data: {
                 labels: Array.from({ length: 16 }, (_, i) => i), // X-axis: 0 to 15
                 datasets: [{
-                    label: "Drag Force (N)",
+                    label: "Total Drag Force (N)",
                     data: [],
                     borderColor: "blue",
                     backgroundColor: "rgba(0, 0, 255, 0.2)", // Light blue area
@@ -100,7 +107,7 @@
                         intersect: false,
                         callbacks: {
                             label: function (context) {
-                                return `Drag Force: ${context.raw.toFixed(2)} N`;
+                                return `Total Drag Force: ${context.raw.toFixed(2)} N`;
                             }
                         }
                     }
@@ -113,7 +120,9 @@
                         ticks: { stepSize: 1 } // ✅ X-axis interval is 1
                     },
                     y: { 
-                        title: { display: true, text: "Drag Force (N)" }
+                        title: { display: true, text: "Total Drag Force (N)" },
+                        beginAtZero: true,
+                        suggestedMax: 1000 // Adjusts dynamically
                     }
                 }
             }
@@ -121,29 +130,39 @@
 
         // Function to update values and chart
         function updateSimulation() {
-            // Get values from sliders
+            // Get values from inputs
             const Cd = parseFloat(cdSlider.value);
             const A = parseFloat(areaSlider.value);
             const v = parseFloat(velocitySlider.value);
+            const units = parseInt(unitInput.value); // Convert to integer
 
             // Update displayed values
             cdValue.textContent = Cd.toFixed(2);
             areaValue.textContent = A.toFixed(2);
             velocityValue.textContent = v.toFixed(2);
+            unitValue.textContent = units;
 
-            // Calculate drag force
-            const dragForce = calculateDrag(Cd, A, v);
-            dragForceDisplay.textContent = dragForce.toFixed(2);
+            // Calculate total drag force
+            const dragForcePerUnit = calculateDrag(Cd, A, v);
+            const totalDragForce = dragForcePerUnit * units;
+            dragForceDisplay.textContent = totalDragForce.toFixed(2);
 
             // Update chart data
-            dragChart.data.datasets[0].data = Array.from({ length: 16 }, (_, i) => calculateDrag(Cd, A, i));
+            let newDragData = Array.from({ length: 16 }, (_, i) => calculateDrag(Cd, A, i) * units);
+            dragChart.data.datasets[0].data = newDragData;
+            
+            // Dynamically adjust Y-axis based on highest value
+            let maxDragForce = Math.max(...newDragData);
+            dragChart.options.scales.y.suggestedMax = maxDragForce + (0.1 * maxDragForce); // Add 10% buffer
+            
             dragChart.update();
         }
 
-        // Event listeners for sliders
+        // Event listeners for sliders and input
         cdSlider.addEventListener("input", updateSimulation);
         areaSlider.addEventListener("input", updateSimulation);
         velocitySlider.addEventListener("input", updateSimulation);
+        unitInput.addEventListener("input", updateSimulation);
 
         // Initial update
         updateSimulation();
