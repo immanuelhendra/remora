@@ -57,22 +57,22 @@
 
     <div class="slider-container">
         <label>Ship Length (m): <span id="shipLengthValue">100</span></label>
-        <input type="range" id="shipLengthSlider" min="10" max="500" step="1" value="100">
+        <input type="range" id="shipLengthSlider" min="10" max="400" step="1" value="100">
     </div>
 
     <div class="slider-container">
         <label>Ship Width (m): <span id="shipWidthValue">20</span></label>
-        <input type="range" id="shipWidthSlider" min="1" max="100" step="1" value="20">
+        <input type="range" id="shipWidthSlider" min="5" max="80" step="1" value="20">
     </div>
 
     <div class="slider-container">
         <label>Ship Draft (m): <span id="shipDraftValue">10</span></label>
-        <input type="range" id="shipDraftSlider" min="1" max="50" step="1" value="10">
+        <input type="range" id="shipDraftSlider" min="2" max="20" step="1" value="10">
     </div>
 
     <div class="slider-container">
         <label>Days Without Cleaning: <span id="daysValue">0</span></label>
-        <input type="range" id="daysSlider" min="0" max="365" step="1" value="0">
+        <input type="range" id="daysSlider" min="0" max="100" step="1" value="0">
     </div>
 
     <!-- Separate Total Drag Forces -->
@@ -143,18 +143,15 @@
             const D = parseFloat(shipDraftSlider.value);
             const A_ship = calculateShipArea(L, W, D);
 
-            // Calculate drag forces
-            const robotDragForce = calculateDrag(Cd, A, v) * units;
-            const shipDragForce = calculateBiofoulingDrag(A_ship, v, days);
-
             // Update displayed values
             document.getElementById("cdValue").textContent = Cd;
             document.getElementById("areaValue").textContent = A;
             document.getElementById("velocityValue").textContent = v;
             document.getElementById("unitValue").textContent = units;
             document.getElementById("daysValue").textContent = days;
-            document.getElementById("robotDragForce").textContent = robotDragForce.toFixed(2);
-            document.getElementById("shipDragForce").textContent = shipDragForce.toFixed(2);
+            document.getElementById("shipLengthValue").textContent = L;
+            document.getElementById("shipWidthValue").textContent = W;
+            document.getElementById("shipDraftValue").textContent = D;
 
             // Update chart data
             dragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateDrag(Cd, A, v) * units);
