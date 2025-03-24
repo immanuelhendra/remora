@@ -52,7 +52,7 @@
         <input type="number" id="unitInput" min="1" max="100" step="1" value="10">
     </div>
 
-    <h3>Total Drag Force: <span id="dragForce">0</span> MN</h3>
+    <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
 
     <hr>
 
@@ -68,7 +68,7 @@
         <label>Ship Drag Height (m): <input type="number" id="shipHeight" min="1" max="50" step="0.1" value="5"></label>
     </div>
 
-    <h3>Clean Ship Drag Force: <span id="shipDragForce">0</span> MN</h3>
+    <h3>Clean Ship Drag Force: <span id="shipDragForce">0</span> N</h3>
 
     <!-- Graph Container -->
     <div class="chart-container">
@@ -98,9 +98,9 @@
         const dragForceDisplay = document.getElementById("dragForce");
         const shipDragForceDisplay = document.getElementById("shipDragForce");
 
-        // Function to calculate drag force in Mega Newtons (MN)
+        // Function to calculate drag force in Newtons
         function calculateDrag(Cd, A, v) {
-            return (0.5 * Cd * rho * A * v ** 2) / 1e6; // Divide by 10^6 to get MN
+            return 0.5 * Cd * rho * A * v ** 2; // Return in Newtons
         }
 
         // Initialize Chart.js
@@ -111,7 +111,7 @@
                 labels: Array.from({ length: 16 }, (_, i) => i), // Time from 0 to 15 seconds
                 datasets: [
                     {
-                        label: "Total Drag Force (MN)",
+                        label: "Total Drag Force (N)",
                         data: [],
                         borderColor: "blue",
                         backgroundColor: "rgba(0, 0, 255, 0.2)",
@@ -120,7 +120,7 @@
                         pointHoverRadius: 8,
                     },
                     {
-                        label: "Clean Ship Drag Force (MN)",
+                        label: "Clean Ship Drag Force (N)",
                         data: [],
                         borderColor: "red",
                         backgroundColor: "rgba(255, 0, 0, 0.2)",
@@ -138,10 +138,13 @@
                         title: { display: true, text: "Time (s)" }
                     },
                     y: { 
-                        title: { display: true, text: "Drag Force (MN)" },
+                        title: { display: true, text: "Drag Force (N)" },
                         beginAtZero: false, // Don't start the y-axis from zero
                         min: 0,  // Set a reasonable minimum for better readability
                         ticks: {
+                            callback: function(value) {
+                                return value.toExponential(3); // Display in scientific notation
+                            },
                             stepSize: 1,  // Adjust the step size for better tick intervals
                         }
                     }
@@ -165,7 +168,7 @@
 
             // Calculate robot's drag force (robot drag = robot drag force)
             const robotDragForce = calculateDrag(Cd, A, vMps) * units;
-            dragForceDisplay.textContent = robotDragForce.toFixed(6);
+            dragForceDisplay.textContent = robotDragForce.toExponential(3); // Display in scientific notation
 
             // Get ship dimensions
             const shipLength = parseFloat(shipLengthInput.value);
@@ -174,11 +177,11 @@
             // Calculate clean ship frontal area and drag force
             const shipArea = shipLength * shipHeight;
             const shipDragForce = calculateDrag(Cd, shipArea, vMps);
-            shipDragForceDisplay.textContent = shipDragForce.toFixed(6);
+            shipDragForceDisplay.textContent = shipDragForce.toExponential(3); // Display in scientific notation
 
             // Calculate total drag force (sum of robot's drag force and clean ship drag force)
             const totalDragForce = robotDragForce + shipDragForce;
-            dragForceDisplay.textContent = totalDragForce.toFixed(6);
+            dragForceDisplay.textContent = totalDragForce.toExponential(3); // Display in scientific notation
 
             // Update chart data
             dragChart.data.datasets[0].data = Array(16).fill(totalDragForce);
