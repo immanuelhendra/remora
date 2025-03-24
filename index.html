@@ -43,7 +43,7 @@
     </div>
 
     <div class="slider-container">
-        <label>Velocity (m/s): <span id="velocityValue">10.0</span></label>
+        <label>Velocity (knots): <span id="velocityValue">10.0</span></label>
         <input type="range" id="velocitySlider" min="0" max="15" step="0.1" value="10">
     </div>
 
@@ -52,7 +52,7 @@
         <input type="number" id="unitInput" min="1" max="100" step="1" value="10">
     </div>
 
-    <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
+    <h3>Total Drag Force: <span id="dragForce">0</span> MN</h3>
 
     <hr>
 
@@ -68,7 +68,7 @@
         <label>Ship Drag Height (m): <input type="number" id="shipHeight" min="1" max="50" step="0.1" value="5"></label>
     </div>
 
-    <h3>Clean Ship Drag Force: <span id="shipDragForce">0</span> N</h3>
+    <h3>Clean Ship Drag Force: <span id="shipDragForce">0</span> MN</h3>
 
     <!-- Graph Container -->
     <div class="chart-container">
@@ -78,6 +78,7 @@
     <script>
         // Constants
         const rho = 1025; // Water density (kg/m³)
+        const knotToMps = 1852 / 3600; // Conversion factor from knots to m/s
 
         // Get input elements
         const cdSlider = document.getElementById("cdSlider");
@@ -97,9 +98,9 @@
         const dragForceDisplay = document.getElementById("dragForce");
         const shipDragForceDisplay = document.getElementById("shipDragForce");
 
-        // Function to calculate drag force
+        // Function to calculate drag force in Mega Newtons (MN)
         function calculateDrag(Cd, A, v) {
-            return 0.5 * Cd * rho * A * v ** 2;
+            return (0.5 * Cd * rho * A * v ** 2) / 1e6; // Divide by 10^6 to get MN
         }
 
         // Initialize Chart.js
@@ -110,7 +111,7 @@
                 labels: Array.from({ length: 16 }, (_, i) => i), // Time from 0 to 15 seconds
                 datasets: [
                     {
-                        label: "Total Drag Force (N)",
+                        label: "Total Drag Force (MN)",
                         data: [],
                         borderColor: "blue",
                         backgroundColor: "rgba(0, 0, 255, 0.2)",
@@ -119,7 +120,7 @@
                         pointHoverRadius: 8,
                     },
                     {
-                        label: "Clean Ship Drag Force (N)",
+                        label: "Clean Ship Drag Force (MN)",
                         data: [],
                         borderColor: "red",
                         backgroundColor: "rgba(255, 0, 0, 0.2)",
@@ -137,8 +138,12 @@
                         title: { display: true, text: "Time (s)" }
                     },
                     y: { 
-                        title: { display: true, text: "Drag Force (N)" },
-                        beginAtZero: true
+                        title: { display: true, text: "Drag Force (MN)" },
+                        beginAtZero: false, // Don't start the y-axis from zero
+                        min: 0,  // Set a reasonable minimum for better readability
+                        ticks: {
+                            stepSize: 1,  // Adjust the step size for better tick intervals
+                        }
                     }
                 }
             }
@@ -148,15 +153,19 @@
             // Get values from sliders
             const Cd = parseFloat(cdSlider.value);
             const A = parseFloat(areaSlider.value);
-            const v = parseFloat(velocitySlider.value);
+            const vKnots = parseFloat(velocitySlider.value); // Velocity in knots
             let units = parseInt(unitInput.value);
+
+            // Convert velocity from knots to m/s
+            const vMps = vKnots * knotToMps;
+            velocityValue.textContent = vKnots.toFixed(2);
 
             // Prevent invalid unit values
             if (units < 1) units = 1;
 
             // Calculate robot's drag force (robot drag = robot drag force)
-            const robotDragForce = calculateDrag(Cd, A, v) * units;
-            dragForceDisplay.textContent = robotDragForce.toFixed(2);
+            const robotDragForce = calculateDrag(Cd, A, vMps) * units;
+            dragForceDisplay.textContent = robotDragForce.toFixed(6);
 
             // Get ship dimensions
             const shipLength = parseFloat(shipLengthInput.value);
@@ -164,12 +173,12 @@
 
             // Calculate clean ship frontal area and drag force
             const shipArea = shipLength * shipHeight;
-            const shipDragForce = calculateDrag(Cd, shipArea, v);
-            shipDragForceDisplay.textContent = shipDragForce.toFixed(2);
+            const shipDragForce = calculateDrag(Cd, shipArea, vMps);
+            shipDragForceDisplay.textContent = shipDragForce.toFixed(6);
 
             // Calculate total drag force (sum of robot's drag force and clean ship drag force)
             const totalDragForce = robotDragForce + shipDragForce;
-            dragForceDisplay.textContent = totalDragForce.toFixed(2);
+            dragForceDisplay.textContent = totalDragForce.toFixed(6);
 
             // Update chart data
             dragChart.data.datasets[0].data = Array(16).fill(totalDragForce);
