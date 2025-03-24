@@ -17,7 +17,7 @@
     <label>Fouling Thickness Factor (G6): <input type="text" id="foulingFactor" value="0.002" oninput="updateGraph()"></label>
     
     <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.8" oninput="updateGraph()"></label>
-    <label>Dirty Ship Cd Factor: <input type="text" id="dirtyCdFactor" value="30" oninput="updateGraph()"></label>
+    
     <label>Robot Cd: <input type="text" id="robotCd" value="0.8" oninput="updateGraph()"></label>
     <label>Number of Robots: <input type="text" id="numRobots" value="10" oninput="updateGraph()"></label>
     <label>Max Biofouling Height (m): <input type="text" id="maxBiofoul" value="0.0045" oninput="updateGraph()"></label>
@@ -30,24 +30,24 @@
             let robotArea = parseFloat(document.getElementById("robotArea").value);
             let velocity = parseFloat(document.getElementById("velocity").value);
             let cleanCd = parseFloat(document.getElementById("cleanCd").value);
-            let dirtyCdFactor = parseFloat(document.getElementById("dirtyCdFactor").value);
+            
             let robotCd = parseFloat(document.getElementById("robotCd").value);
             let shipWidth = parseFloat(document.getElementById("shipWidth").value);
             let shipDragHeight = parseFloat(document.getElementById("shipDragHeight").value);
             let maxBiofoul = parseFloat(document.getElementById("maxBiofoul").value);
             let foulingFactor = parseFloat(document.getElementById("foulingFactor").value);
             
-            let B3 = velocity; 
-            let G6 = (t / 180) * foulingFactor;
-            let G2 = cleanCd * (1 + dirtyCdFactor * G6 / shipDragHeight);
+            let shipVelocity = velocity; 
+            let foulingThickness = maxBiofoul / (1 + (maxBiofoul * 10000 - 1) * Math.exp(-0.1 * t));
+            let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDragHeight);
             
-            let cleanDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * B3;
-            let dirtyDrag = 0.5 * G2 * 1025 * ((shipWidth + 2 * G6) * (shipDragHeight + G6)) * B3;
-            let robotDrag = numRobots * 0.5 * 1025 * robotCd * robotArea * B3;
+            let cleanShipDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * shipVelocity;
+            let dirtyShipDrag = 0.5 * dirtyShipCd * 1025 * ((shipWidth + 2 * foulingThickness) * (shipDragHeight + foulingThickness)) * shipVelocity;
+            let robotDragForce = numRobots * 0.5 * 1025 * robotCd * robotArea * shipVelocity;
             
             let dragCleanShip = 100;
-            let dragDirtyShip = ((dirtyDrag - cleanDrag) / cleanDrag) * 100 + 100;
-            let dragWithRobot = (robotDrag * velocity / cleanDrag) * 100 + 100;
+            let dragDirtyShip = ((dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
+            let dragWithRobot = ((robotDragForce + dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
             
             return { dragCleanShip, dragDirtyShip, dragWithRobot };
         }
