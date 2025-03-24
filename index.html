@@ -3,91 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ship Drag Force Simulation</title>
+    <title>Drag % vs Time</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-        .slider-container {
-            margin: 10px;
-        }
-        .chart-container {
-            width: 90%;
-            max-width: 900px;
-            margin: auto;
-        }
-        canvas {
-            width: 100% !important;
-            height: auto !important;
-            max-height: 80vh;
-        }
-    </style>
 </head>
 <body>
-
-    <h2>Ship Drag Force Simulation</h2>
-    <p>Adjust the sliders to see how drag force changes over time.</p>
-
-    <h3>Drag Force Increase (%) Over Time</h3>
-
-    <div class="chart-container">
-        <canvas id="dragChart"></canvas>
-    </div>
-
+    <h2>Drag % vs Time (Days)</h2>
+    
+    <label>Robot Area (m²): <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph()"></label>
+    <label>Velocity (m/s): <input type="range" id="velocity" min="5" max="20" step="0.5" value="10" oninput="updateGraph()"></label>
+    <label>Ship Length (m): <input type="range" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label>
+    <label>Ship Width (m): <input type="range" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label>
+    <label>Ship Drag Height (m): <input type="range" id="shipDragHeight" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label>
+    
+    <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.7" oninput="updateGraph()"></label>
+    <label>Dirty Ship Cd: <input type="text" id="dirtyCd" value="0.9" oninput="updateGraph()"></label>
+    <label>Robot Cd: <input type="text" id="robotCd" value="0.8" oninput="updateGraph()"></label>
+    <label>Number of Robots: <input type="text" id="numRobots" value="10" oninput="updateGraph()"></label>
+    <label>Max Biofouling Height (m): <input type="text" id="maxBiofoul" value="0.0045" oninput="updateGraph()"></label>
+    
+    <canvas id="dragChart"></canvas>
+    
     <script>
-        // Constants
-        const rho = 1025; // Water density (kg/m³), always assumed to be 1025
-        const timeDays = Array.from({ length: 16 }, (_, i) => i); // Time in days
-
-        // Sample calculation for drag force increase
-        function calculateDragIncrease(days) {
-            let cleanShipDrag = 100; // Assume clean ship drag as 100%
-            let dragIncrease = cleanShipDrag + days * 5; // Example increase over time
-            return Math.min(dragIncrease, 200); // Capped at 200%
+        function calculateDragPercentage(t) {
+            let numRobots = parseFloat(document.getElementById("numRobots").value);
+            let robotArea = parseFloat(document.getElementById("robotArea").value);
+            let velocity = parseFloat(document.getElementById("velocity").value);
+            let cleanCd = parseFloat(document.getElementById("cleanCd").value);
+            let dirtyCd = parseFloat(document.getElementById("dirtyCd").value);
+            let robotCd = parseFloat(document.getElementById("robotCd").value);
+            let shipWidth = parseFloat(document.getElementById("shipWidth").value);
+            let shipDragHeight = parseFloat(document.getElementById("shipDragHeight").value);
+            let maxBiofoul = parseFloat(document.getElementById("maxBiofoul").value);
+            
+            let foulingThickness = (t / 180) * maxBiofoul;
+            let cleanDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * (velocity ** 2);
+            let dirtyDrag = 0.5 * 1025 * dirtyCd * ((shipWidth + 2 * foulingThickness) * (shipDragHeight + foulingThickness)) * (velocity ** 2);
+            let robotDrag = numRobots * 0.5 * 1025 * robotCd * robotArea * (velocity ** 2);
+            
+            let dragCleanShip = 100;
+            let dragDirtyShip = ((dirtyDrag - cleanDrag) / cleanDrag) * 100 + 100;
+            let dragWithRobot = (robotDrag / cleanDrag) * 100 + 100;
+            
+            return { dragCleanShip, dragDirtyShip, dragWithRobot };
         }
-
-        // Generate data
-        let dragData = timeDays.map(calculateDragIncrease);
-
-        // Initialize Chart.js
-        const ctx = document.getElementById("dragChart").getContext("2d");
+        
+        function updateGraph() {
+            let time = Array.from({length: 19}, (_, i) => i * 10);
+            let cleanData = [], dirtyData = [], robotData = [];
+            
+            for (let t of time) {
+                let dragValues = calculateDragPercentage(t);
+                cleanData.push(dragValues.dragCleanShip);
+                dirtyData.push(dragValues.dragDirtyShip);
+                robotData.push(dragValues.dragWithRobot);
+            }
+            
+            dragChart.data.labels = time;
+            dragChart.data.datasets[0].data = cleanData;
+            dragChart.data.datasets[1].data = dirtyData;
+            dragChart.data.datasets[2].data = robotData;
+            dragChart.update();
+        }
+        
+        let ctx = document.getElementById("dragChart").getContext("2d");
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: timeDays,
-                datasets: [{
-                    label: "Drag Force Increase (%)",
-                    data: dragData,
-                    borderColor: "red",
-                    backgroundColor: "rgba(255, 0, 0, 0.2)",
-                    fill: true,
-                    pointRadius: 5,
-                    pointHoverRadius: 8,
-                }]
+                labels: [],
+                datasets: [
+                    { label: "% Drag Clean Ship", borderColor: "green", data: [], fill: false },
+                    { label: "% Drag Dirty Ship", borderColor: "red", data: [], fill: false },
+                    { label: "% Drag With Robot", borderColor: "blue", data: [], fill: false }
+                ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: { display: true, text: "Time (Days)" },
-                        min: 0,
-                        max: 15,
-                        ticks: { stepSize: 1 }
-                    },
-                    y: {
-                        title: { display: true, text: "Drag Force Increase (%)" },
-                        min: 100,
-                        max: 200,
-                        ticks: { stepSize: 1 }
-                    }
-                }
+                scales: { x: { title: { display: true, text: "Time (Days)" } }, y: { title: { display: true, text: "% Drag" } } }
             }
         });
+        
+        updateGraph();
     </script>
-
 </body>
 </html>
