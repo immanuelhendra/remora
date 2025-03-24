@@ -70,9 +70,15 @@
 
     <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
 
-    <!-- Graph Container -->
+    <!-- Graph Containers for 3 separate charts -->
     <div class="chart-container">
-        <canvas id="dragChart"></canvas>
+        <canvas id="cleanShipChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="robotChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="biofoulingChart"></canvas>
     </div>
 
     <script>
@@ -121,9 +127,12 @@
             return calculateDrag(Cd_fouled, A, v);
         }
 
-        // Initialize Chart.js
-        const ctx = document.getElementById("dragChart").getContext("2d");
-        let dragChart = new Chart(ctx, {
+        // Initialize Chart.js for 3 separate charts
+        const ctxCleanShip = document.getElementById("cleanShipChart").getContext("2d");
+        const ctxRobot = document.getElementById("robotChart").getContext("2d");
+        const ctxBiofouling = document.getElementById("biofoulingChart").getContext("2d");
+
+        let cleanShipChart = new Chart(ctxCleanShip, {
             type: "line",
             data: {
                 labels: Array.from({ length: 365 }, (_, i) => i), // X-axis: Days from 0 to 365
@@ -134,38 +143,12 @@
                         borderColor: "blue",
                         backgroundColor: "rgba(0, 0, 255, 0.2)",
                         fill: true,
-                    },
-                    {
-                        label: "Clean Ship + Robot Drag Force (N)",
-                        data: [],
-                        borderColor: "green",
-                        backgroundColor: "rgba(0, 255, 0, 0.2)",
-                        fill: true,
-                    },
-                    {
-                        label: "Clean Ship + Biofouling Drag Force (N)",
-                        data: [],
-                        borderColor: "red",
-                        backgroundColor: "rgba(255, 0, 0, 0.2)",
-                        fill: true,
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        enabled: true,
-                        mode: "nearest",
-                        intersect: false,
-                        callbacks: {
-                            label: function (context) {
-                                return `Total Drag Force: ${context.raw.toExponential(3)} N`;
-                            }
-                        }
-                    }
-                },
                 scales: {
                     x: {
                         title: { display: true, text: "Time (Days)" },
@@ -183,7 +166,75 @@
             }
         });
 
-        // Function to update values and chart
+        let robotChart = new Chart(ctxRobot, {
+            type: "line",
+            data: {
+                labels: Array.from({ length: 365 }, (_, i) => i), // X-axis: Days from 0 to 365
+                datasets: [
+                    {
+                        label: "Clean Ship + Robot Drag Force (N)",
+                        data: [],
+                        borderColor: "green",
+                        backgroundColor: "rgba(0, 255, 0, 0.2)",
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: "Time (Days)" },
+                    },
+                    y: {
+                        title: { display: true, text: "Drag Force (N)" },
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toExponential(3); // Display in scientific notation
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        let biofoulingChart = new Chart(ctxBiofouling, {
+            type: "line",
+            data: {
+                labels: Array.from({ length: 365 }, (_, i) => i), // X-axis: Days from 0 to 365
+                datasets: [
+                    {
+                        label: "Clean Ship + Biofouling Drag Force (N)",
+                        data: [],
+                        borderColor: "red",
+                        backgroundColor: "rgba(255, 0, 0, 0.2)",
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: "Time (Days)" },
+                    },
+                    y: {
+                        title: { display: true, text: "Drag Force (N)" },
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toExponential(3); // Display in scientific notation
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to update values and charts
         function updateSimulation() {
             // Get values from inputs
             const Cd_robot = parseFloat(cdSlider.value);
@@ -212,40 +263,4 @@
             const robotDragForce = calculateDrag(Cd_robot, A_robot, velocity) * units;
 
             // Calculate drag force for the ship (clean ship)
-            const foulingThickness = maxFoulingThickness / (1 + Math.exp(-biofoulingRate * (new Date().getDay() - 180))); // Logistic growth of fouling over time
-            const shipDragForce = calculateBiofoulingDragForce(Cd_clean, A_ship, foulingThickness, velocity, maxFoulingThickness);
-
-            // Update chart data
-            let cleanShipData = [];
-            let robotWithShipData = [];
-            let foulingShipData = [];
-
-            for (let i = 0; i <= 365; i++) {
-                const shipDrag = calculateBiofoulingDragForce(Cd_clean, A_ship, foulingThickness, velocity, maxFoulingThickness);
-                cleanShipData.push(shipDrag);
-                robotWithShipData.push(shipDrag + robotDragForce);
-                foulingShipData.push(shipDrag + robotDragForce); // Add fouling to total drag force
-            }
-
-            dragChart.data.datasets[0].data = cleanShipData;
-            dragChart.data.datasets[1].data = robotWithShipData;
-            dragChart.data.datasets[2].data = foulingShipData;
-
-            dragChart.update();
-        }
-
-        // Event listeners for sliders and input
-        cdSlider.addEventListener("input", updateSimulation);
-        areaSlider.addEventListener("input", updateSimulation);
-        velocitySlider.addEventListener("input", updateSimulation);
-        unitInput.addEventListener("input", updateSimulation);
-        lengthInput.addEventListener("input", updateSimulation);
-        widthInput.addEventListener("input", updateSimulation);
-        heightInput.addEventListener("input", updateSimulation);
-
-        // Initial update
-        updateSimulation();
-    </script>
-
-</body>
-</html>
+            const foulingThickness = maxFoulingThickness / (1 + Math.exp(-biofoulingRate * (new Date().getDay() - 180))); // Logistic growth of fou
