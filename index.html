@@ -43,7 +43,7 @@
     </div>
 
     <div class="slider-container">
-        <label>Initial Velocity (m/s): <span id="velocityValue">10.0</span></label>
+        <label>Velocity (m/s): <span id="velocityValue">10.0</span></label>
         <input type="range" id="velocitySlider" min="0" max="15" step="0.1" value="10">
     </div>
 
@@ -147,27 +147,21 @@
             velocityValue.textContent = v.toFixed(2);
             unitValue.textContent = units;
 
-            // Simulate time-based velocity increase (for simplicity, linearly increasing)
-            const timeStep = 1; // seconds
-            const maxTime = 15; // maximum time for the graph
-            const velocities = Array.from({ length: maxTime + 1 }, (_, i) => v + i * 0.5); // velocity increases by 0.5 m/s each second
-
-            // Calculate drag force data based on velocity over time
-            let newDragData = velocities.map(velocity => calculateDrag(Cd, A, velocity) * units);
-            
-            // Update chart data
-            dragChart.data.datasets[0].data = newDragData;
-
-            // Dynamically adjust Y-axis based on highest value
-            let maxDragForce = Math.max(...newDragData);
-            dragChart.options.scales.y.max = maxDragForce * 1.2; // 20% buffer for better visualization
-            
-            dragChart.update();
-
-            // Calculate and display total drag force at current velocity
+            // Calculate drag force (constant for all time)
             const dragForcePerUnit = calculateDrag(Cd, A, v);
             const totalDragForce = dragForcePerUnit * units;
             dragForceDisplay.textContent = totalDragForce.toFixed(2);
+
+            // Create an array of constant drag forces (the same value over time)
+            let constantDragData = Array(16).fill(totalDragForce); // Fill the array with the same value
+
+            // Update chart data
+            dragChart.data.datasets[0].data = constantDragData;
+
+            // Dynamically adjust Y-axis based on the total drag force value
+            dragChart.options.scales.y.max = totalDragForce * 1.2; // 20% buffer for better visualization
+            
+            dragChart.update();
         }
 
         // Event listeners for sliders and input
