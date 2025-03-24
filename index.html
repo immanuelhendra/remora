@@ -78,7 +78,7 @@
     <!-- Separate Total Drag Forces -->
     <h3>Total Drag Force</h3>
     <p><strong>Robot Drag Force:</strong> <span id="robotDragForce">0</span> N</p>
-    <p><strong>Ship Drag Force (Biofouling):</strong> <span id="shipDragForce">0</span> N</p>
+    <p><strong>Biofouling Drag Force (Additional):</strong> <span id="biofoulingDragForce">0</span> N</p>
 
     <!-- Graph Container -->
     <div class="chart-container">
@@ -88,16 +88,13 @@
     <script>
         // Constants
         const rho = 1025; // Water density (kg/m³)
-
-        // Biofouling Growth Model Parameters
-        const biofoulingGrowthPerDay = 0.15 / 1000; // 0.15 mm/day to meters/day (for 15 mm total after 100 days)
-
-        // Get input elements
-        const sliders = document.querySelectorAll("input");
+        const A_BIO = 0.075; // Empirical constant for biofouling roughness
+        const B_BIO = 0.9; // Empirical constant for friction increase
+        const biofoulingGrowthPerDay = 0.15 / 1000; // Biofouling growth rate in meters per day (0.15mm/day)
 
         // Function to calculate ship wetted surface area
         function calculateShipArea(L, W, D) {
-            return 1.7 * L * D + W * L;  // Approximation for wetted area
+            return 1.7 * L * D + W * L;
         }
 
         // Function to calculate drag force per robot
@@ -105,12 +102,19 @@
             return 0.5 * Cd * rho * A * v ** 2;
         }
 
-        // Function to calculate biofouling drag force over time
-        function calculateBiofoulingDrag(A_ship, v, days) {
-            // Biofouling growth in meters per day (0.15mm per day growth rate)
-            const biofoulingHeight = biofoulingGrowthPerDay * days; // Growth per day multiplied by time
-            const delta_CF = 0.075 * Math.pow(biofoulingHeight / A_ship, 0.9); // Assuming linear drag increase
-            return 0.5 * rho * v ** 2 * A_ship * delta_CF;  // Drag force calculation
+        // Function to calculate additional biofouling drag force over time
+        function calculateBiofoulingDrag(A_ship, v, days, L, W) {
+            // Biofouling growth in meters
+            const biofoulingHeight = biofoulingGrowthPerDay * days;
+
+            // Additional wetted area due to biofouling
+            const A_bio = L * W * biofoulingHeight;
+
+            // Drag coefficient adjustment due to biofouling
+            const delta_CF = A_BIO * Math.pow(biofoulingHeight / A_ship, B_BIO);
+
+            // Additional drag force due to biofouling
+            return 0.5 * rho * v ** 2 * A_bio * delta_CF;
         }
 
         // Initialize Chart.js
@@ -139,6 +143,12 @@
             const D = parseFloat(shipDraftSlider.value);
             const A_ship = calculateShipArea(L, W, D);
 
+            // Calculate drag force for robot
+            const robotDrag = calculateDrag(Cd, A, v) * units;
+
+            // Calculate additional biofouling drag force
+            const biofoulingDrag = calculateBiofoulingDrag(A_ship, v, days, L, W);
+
             // Update displayed values
             document.getElementById("cdValue").textContent = Cd;
             document.getElementById("areaValue").textContent = A;
@@ -149,12 +159,17 @@
             document.getElementById("shipWidthValue").textContent = W;
             document.getElementById("shipDraftValue").textContent = D;
 
+            // Update displayed drag forces
+            document.getElementById("robotDragForce").textContent = robotDrag.toFixed(2);
+            document.getElementById("biofoulingDragForce").textContent = biofoulingDrag.toFixed(2);
+
             // Update chart data
             dragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateDrag(Cd, A, v) * units);
-            dragChart.data.datasets[1].data = Array.from({ length: 101 }, (_, i) => calculateBiofoulingDrag(A_ship, v, i));
+            dragChart.data.datasets[1].data = Array.from({ length: 101 }, (_, i) => calculateBiofoulingDrag(A_ship, v, i, L, W));
             dragChart.update();
         }
 
+        // Event listeners for inputs
         sliders.forEach(slider => slider.addEventListener("input", updateSimulation));
         updateSimulation();
     </script>
