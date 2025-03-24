@@ -7,34 +7,41 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
+            font-family: Arial, sans-serif;
             text-align: center;
+            margin: 20px;
         }
-        .input-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
+        .slider-container {
+            margin: 10px;
+        }
+        .chart-container {
+            width: 90%;
+            max-width: 900px;
+            margin: auto;
         }
         canvas {
-            max-width: 100vw;
-            height: 60vh;
+            width: 100% !important;
+            height: auto !important;
+            max-height: 80vh;
         }
     </style>
 </head>
 <body>
     <h2>Drag % vs Time (Days)</h2>
-    <div class="input-container">
-        <label>Robot Area (m²): <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)"> <span id="robotAreaValue">0.1</span></label>
-        <label>Velocity (m/s): <input type="range" id="velocity" min="5" max="20" step="0.5" value="10" oninput="updateGraph(); updateValue('velocityValue', this.value)"> <span id="velocityValue">10</span></label>
-        <label>Ship Length (m): <input type="number" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label>
-        <label>Ship Width (m): <input type="number" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label>
-        <label>Ship Drag Height (m): <input type="number" id="shipDragHeight" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label>
-        <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.8" oninput="updateGraph()"></label>
-        <label>Robot Cd: <input type="text" id="robotCd" value="0.8" oninput="updateGraph()"></label>
-        <label>Number of Robots: <input type="text" id="numRobots" value="10" oninput="updateGraph()"></label>
+    <div class="slider-container">
+        <label>Robot Area (m²): <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)"> <span id="robotAreaValue">0.1</span></label><br>
+        <label>Velocity (m/s): <input type="range" id="velocity" min="5" max="20" step="0.5" value="10" oninput="updateGraph(); updateValue('velocityValue', this.value)"> <span id="velocityValue">10</span></label><br>
+        <label>Ship Length (m): <input type="number" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label><br>
+        <label>Ship Width (m): <input type="number" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label><br>
+        <label>Ship Drag Height (m): <input type="number" id="shipDragHeight" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label><br>
+        <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.8" oninput="updateGraph()"></label><br>
+        <label>Robot Cd: <input type="text" id="robotCd" value="0.8" oninput="updateGraph()"></label><br>
+        <label>Number of Robots: <input type="text" id="numRobots" value="10" oninput="updateGraph()"></label><br>
         <label>Max Biofouling Height (m): <input type="text" id="maxBiofoul" value="0.0045" oninput="updateGraph()"></label>
     </div>
-    <canvas id="dragChart"></canvas>
+    <div class="chart-container">
+        <canvas id="dragChart"></canvas>
+    </div>
     <script>
         function updateValue(id, value) {
             document.getElementById(id).innerText = value;
