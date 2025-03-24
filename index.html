@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag Force Simulation - Clean Ship</title>
+    <title>Ship Drag Force Simulation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -28,153 +28,164 @@
 </head>
 <body>
 
-    <h2>Drag Force Simulation for a Clean Ship</h2>
-    <p>Adjust the sliders to see how the drag force changes over time for a clean ship.</p>
+    <h2>Ship Drag Force Simulation</h2>
+    <p>Adjust the sliders to see how drag force changes over time.</p>
 
-    <!-- Ship Inputs -->
+    <!-- Sliders for ship and robot -->
     <div class="slider-container">
-        <label>Ship Length (m): <span id="lengthValue">100</span></label>
-        <input type="number" id="lengthInput" min="1" max="1000" step="1" value="100">
+        <label>Ship Length (m): <span id="lengthValue">20</span></label>
+        <input type="range" id="lengthSlider" min="10" max="100" step="1" value="20">
     </div>
 
     <div class="slider-container">
-        <label>Ship Width (m): <span id="widthValue">30</span></label>
-        <input type="number" id="widthInput" min="1" max="1000" step="1" value="30">
+        <label>Ship Width (m): <span id="widthValue">10</span></label>
+        <input type="range" id="widthSlider" min="5" max="50" step="1" value="10">
     </div>
 
     <div class="slider-container">
-        <label>Ship Drag Height (m): <span id="heightValue">5</span></label>
-        <input type="number" id="heightInput" min="1" max="100" step="1" value="5">
+        <label>Drag Height (m): <span id="heightValue">5</span></label>
+        <input type="range" id="heightSlider" min="1" max="10" step="0.1" value="5">
     </div>
 
     <div class="slider-container">
-        <label>Ship Drag Coefficient (Cd): <span id="cdValue">0.003</span></label>
-        <input type="number" id="cdInput" min="0.001" max="1" step="0.001" value="0.003">
+        <label>Velocity (knots): <span id="velocityValue">10</span></label>
+        <input type="range" id="velocitySlider" min="0" max="20" step="0.1" value="10">
     </div>
 
     <div class="slider-container">
-        <label>Ship Speed (knots): <span id="velocityValue">10.0</span></label>
-        <input type="range" id="velocitySlider" min="0" max="30" step="0.1" value="10">
+        <label>Number of Robots: <span id="unitValue">1</span></label>
+        <input type="number" id="unitInput" min="1" max="100" step="1" value="1">
     </div>
 
-    <div class="slider-container">
-        <label>Water Density (kg/m³): <span id="densityValue">1025</span></label>
-        <input type="number" id="densityInput" min="900" max="1200" step="1" value="1025">
-    </div>
+    <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
 
-    <!-- Chart Container for Drag Force over Time -->
+    <!-- Graph Container -->
     <div class="chart-container">
-        <canvas id="dragForceChart"></canvas>
+        <canvas id="dragChart"></canvas>
     </div>
 
     <script>
         // Constants
-        const rho = 1025; // Default water density in kg/m³ (Seawater)
-        const daysInYear = 365; // Simulate for 1 year (365 days)
+        const rho = 1025; // Water density (kg/m³), always assumed to be 1025
 
         // Get input elements
-        const lengthInput = document.getElementById("lengthInput");
-        const widthInput = document.getElementById("widthInput");
-        const heightInput = document.getElementById("heightInput");
-        const cdInput = document.getElementById("cdInput");
+        const lengthSlider = document.getElementById("lengthSlider");
+        const widthSlider = document.getElementById("widthSlider");
+        const heightSlider = document.getElementById("heightSlider");
         const velocitySlider = document.getElementById("velocitySlider");
-        const densityInput = document.getElementById("densityInput");
+        const unitInput = document.getElementById("unitInput");
 
         // Get display elements
         const lengthValue = document.getElementById("lengthValue");
         const widthValue = document.getElementById("widthValue");
         const heightValue = document.getElementById("heightValue");
-        const cdValue = document.getElementById("cdValue");
         const velocityValue = document.getElementById("velocityValue");
-        const densityValue = document.getElementById("densityValue");
+        const unitValue = document.getElementById("unitValue");
+        const dragForceDisplay = document.getElementById("dragForce");
 
-        // Function to calculate drag force
-        function calculateDragForce(Cd, width, dragHeight, velocity, rho) {
-            // Calculate frontal area A (width * dragHeight)
-            const A = width * dragHeight;
-            return 0.5 * rho * Cd * A * velocity * velocity;
+        // Function to calculate drag force for the ship
+        function calculateShipDrag(L, W, H, v) {
+            // Cross-sectional area is the width * drag height
+            const A = W * H;
+            return 0.5 * 0.8 * rho * A * v ** 2;  // Cd is assumed to be 0.8 for the ship
         }
 
         // Initialize Chart.js
-        const ctx = document.getElementById("dragForceChart").getContext("2d");
-
-        let dragForceChart = new Chart(ctx, {
+        const ctx = document.getElementById("dragChart").getContext("2d");
+        let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: Array.from({ length: daysInYear }, (_, i) => i), // Days from 0 to 365
-                datasets: [
-                    {
-                        label: "Clean Ship Drag Force (N)",
-                        data: [],
-                        borderColor: "blue",
-                        backgroundColor: "rgba(0, 0, 255, 0.2)",
-                        fill: true,
-                    }
-                ]
+                labels: Array.from({ length: 16 }, (_, i) => i), // X-axis: Time (days)
+                datasets: [{
+                    label: "Ship Drag Force (N)",
+                    data: [],
+                    borderColor: "blue",
+                    backgroundColor: "rgba(0, 0, 255, 0.2)",
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        enabled: true,
+                        mode: "nearest",
+                        intersect: false,
+                        callbacks: {
+                            label: function (context) {
+                                return `Ship Drag Force: ${context.raw.toFixed(2)} N`;
+                            }
+                        }
+                    }
+                },
                 scales: {
                     x: {
                         title: { display: true, text: "Time (Days)" },
+                        min: 0,
+                        max: 15,
+                        ticks: { stepSize: 1 }
                     },
                     y: {
                         title: { display: true, text: "Drag Force (N)" },
-                        beginAtZero: false,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toExponential(3); // Display in scientific notation
-                            }
-                        }
+                        beginAtZero: false
                     }
                 }
             }
         });
 
-        // Function to update simulation
+        // Function to update the simulation
         function updateSimulation() {
             // Get values from inputs
-            const length = parseFloat(lengthInput.value);
-            const width = parseFloat(widthInput.value);
-            const dragHeight = parseFloat(heightInput.value);
-            const Cd_clean = parseFloat(cdInput.value);
-            const velocity_knots = parseFloat(velocitySlider.value);
-            const rho = parseFloat(densityInput.value);
+            const L = parseFloat(lengthSlider.value);
+            const W = parseFloat(widthSlider.value);
+            const H = parseFloat(heightSlider.value);
+            const vKnots = parseFloat(velocitySlider.value);
+            let units = parseInt(unitInput.value);
+
+            // Convert velocity from knots to m/s
+            const v = vKnots * 0.514444;  // 1 knot = 0.514444 m/s
+
+            // Prevent units from being zero or negative
+            if (units < 1) {
+                units = 1;
+                unitInput.value = 1;
+            }
 
             // Update displayed values
-            lengthValue.textContent = length.toFixed(2);
-            widthValue.textContent = width.toFixed(2);
-            heightValue.textContent = dragHeight.toFixed(2);
-            cdValue.textContent = Cd_clean.toFixed(3);
-            velocityValue.textContent = velocity_knots.toFixed(1);
-            densityValue.textContent = rho.toFixed(0);
+            lengthValue.textContent = L.toFixed(2);
+            widthValue.textContent = W.toFixed(2);
+            heightValue.textContent = H.toFixed(2);
+            velocityValue.textContent = vKnots.toFixed(2);
+            unitValue.textContent = units;
 
-            // Convert speed from knots to m/s
-            const velocity = velocity_knots * 0.514444;
+            // Calculate drag force for the ship
+            const shipDragForce = calculateShipDrag(L, W, H, v);
+            dragForceDisplay.textContent = shipDragForce.toFixed(2);
 
-            // Calculate drag force for the clean ship
-            const dragForce = calculateDragForce(Cd_clean, width, dragHeight, velocity, rho);
+            // Update chart data
+            let newDragData = Array.from({ length: 16 }, (_, i) => shipDragForce); // Static for now
+            dragChart.data.datasets[0].data = newDragData;
 
-            // Generate drag force over time (simulating for 365 days)
-            const dragForcesOverTime = Array.from({ length: daysInYear }, (_, day) => dragForce);
+            // Dynamically adjust Y-axis based on highest value
+            let maxDragForce = Math.max(...newDragData);
+            dragChart.options.scales.y.max = maxDragForce * 1.2; // 20% buffer for better visualization
 
-            // Update the chart with drag forces
-            dragForceChart.data.datasets[0].data = dragForcesOverTime;
-            dragForceChart.update();
+            dragChart.update();
         }
 
-        // Call the update function to initialize the chart
-        updateSimulation();
-
-        // Add event listeners to update simulation when inputs change
-        lengthInput.addEventListener("input", updateSimulation);
-        widthInput.addEventListener("input", updateSimulation);
-        heightInput.addEventListener("input", updateSimulation);
-        cdInput.addEventListener("input", updateSimulation);
+        // Event listeners for sliders and input
+        lengthSlider.addEventListener("input", updateSimulation);
+        widthSlider.addEventListener("input", updateSimulation);
+        heightSlider.addEventListener("input", updateSimulation);
         velocitySlider.addEventListener("input", updateSimulation);
-        densityInput.addEventListener("input", updateSimulation);
+        unitInput.addEventListener("input", updateSimulation);
 
+        // Initial update
+        updateSimulation();
     </script>
+
 </body>
 </html>
