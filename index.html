@@ -41,13 +41,13 @@
             let foulingThickness = maxBiofoul / (1 + (maxBiofoul * 10000 - 1) * Math.exp(-0.1 * t));
             let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDragHeight);
             
-            let cleanShipDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * shipVelocity;
-            let dirtyShipDrag = 0.5 * dirtyShipCd * 1025 * ((shipWidth + 2 * foulingThickness) * (shipDragHeight + foulingThickness)) * shipVelocity;
-            let robotDragForce = numRobots * 0.5 * 1025 * robotCd * robotArea * shipVelocity;
+            let cleanShipDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * (shipVelocity ** 2);
+            let dirtyShipDrag = 0.5 * dirtyShipCd * 1025 * ((shipWidth + 2 * foulingThickness) * (shipDragHeight + foulingThickness)) * (shipVelocity ** 2);
+            let robotDragForce = numRobots * 0.5 * 1025 * robotCd * robotArea * (shipVelocity ** 2);
             
             let dragCleanShip = 100;
             let dragDirtyShip = ((dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
-            let dragWithRobot = ((robotDragForce + dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
+            let dragWithRobot = (robotDragForce / cleanShipDrag) * 100 + 100;
             
             return { dragCleanShip, dragDirtyShip, dragWithRobot };
         }
