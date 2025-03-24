@@ -94,27 +94,7 @@
         const G = 0.02; // Growth rate constant
 
         // Get input elements
-        const cdSlider = document.getElementById("cdSlider");
-        const areaSlider = document.getElementById("areaSlider");
-        const velocitySlider = document.getElementById("velocitySlider");
-        const unitInput = document.getElementById("unitInput");
-        const daysSlider = document.getElementById("daysSlider");
-
-        const shipLengthSlider = document.getElementById("shipLengthSlider");
-        const shipWidthSlider = document.getElementById("shipWidthSlider");
-        const shipDraftSlider = document.getElementById("shipDraftSlider");
-
-        // Get display elements
-        const cdValue = document.getElementById("cdValue");
-        const areaValue = document.getElementById("areaValue");
-        const velocityValue = document.getElementById("velocityValue");
-        const unitValue = document.getElementById("unitValue");
-        const daysValue = document.getElementById("daysValue");
-
-        const shipLengthValue = document.getElementById("shipLengthValue");
-        const shipWidthValue = document.getElementById("shipWidthValue");
-        const shipDraftValue = document.getElementById("shipDraftValue");
-
+        const sliders = document.querySelectorAll("input");
         const dragForceDisplay = document.getElementById("dragForce");
 
         // Function to calculate ship wetted surface area
@@ -150,23 +130,31 @@
         });
 
         function updateSimulation() {
+            // Get values from inputs
+            const Cd = parseFloat(cdSlider.value);
+            const A = parseFloat(areaSlider.value);
+            const v = parseFloat(velocitySlider.value);
+            const units = parseInt(unitInput.value);
+            const days = parseInt(daysSlider.value);
             const L = parseFloat(shipLengthSlider.value);
             const W = parseFloat(shipWidthSlider.value);
             const D = parseFloat(shipDraftSlider.value);
             const A_ship = calculateShipArea(L, W, D);
 
-            // Update display values
-            shipLengthValue.textContent = L;
-            shipWidthValue.textContent = W;
-            shipDraftValue.textContent = D;
+            // Update displayed values
+            document.getElementById("cdValue").textContent = Cd;
+            document.getElementById("areaValue").textContent = A;
+            document.getElementById("velocityValue").textContent = v;
+            document.getElementById("unitValue").textContent = units;
+            document.getElementById("daysValue").textContent = days;
 
             // Update chart data
+            dragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateDrag(Cd, A, v) * units);
+            dragChart.data.datasets[1].data = Array.from({ length: 101 }, (_, i) => calculateBiofoulingDrag(A_ship, v, i));
             dragChart.update();
         }
 
-        shipLengthSlider.addEventListener("input", updateSimulation);
-        shipWidthSlider.addEventListener("input", updateSimulation);
-        shipDraftSlider.addEventListener("input", updateSimulation);
+        sliders.forEach(slider => slider.addEventListener("input", updateSimulation));
         updateSimulation();
     </script>
 
