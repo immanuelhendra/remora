@@ -67,14 +67,14 @@
     <script>
         // Constants
         const rho = 1025; // Water density (kg/m³)
-        const L = 50; // Reference ship length (meters)
-        const A_BIO = 0.075; // Empirical constant for biofouling roughness
-        const B_BIO = 0.9; // Empirical constant for friction increase
+        const L = 500; // Reference ship length (meters)
+        const A_BIO = 0.09; // Empirical constant for biofouling roughness
+        const B_BIO = 1; // Empirical constant for friction increase
 
         // Biofouling Growth Model Parameters
-        const k0 = 30; // Initial roughness height (μm)
-        const k_max = 300; // Maximum roughness height (μm)
-        const G = 0.02; // Growth rate constant
+        const k0 = 50; // Initial roughness height (μm)
+        const k_max = 500; // Maximum roughness height (μm)
+        const G = 0.05; // Growth rate constant
 
         // Get input elements
         const cdSlider = document.getElementById("cdSlider");
