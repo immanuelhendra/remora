@@ -15,25 +15,25 @@
             margin: 10px;
         }
         .chart-container {
-            width: 90%; /* Makes graph responsive */
-            max-width: 900px; /* Limits max width */
+            width: 90%;
+            max-width: 900px;
             margin: auto;
         }
         canvas {
-            width: 100% !important; /* Auto-adjusts width */
-            height: auto !important; /* Auto-adjusts height */
-            max-height: 80vh; /* Keeps height within 80% of screen */
+            width: 100% !important;
+            height: auto !important;
+            max-height: 80vh;
         }
     </style>
 </head>
 <body>
 
     <h2>Water Drag Force Simulation</h2>
-    <p>Adjust the sliders to see how drag force changes in real-time.</p>
+    <p>Adjust the sliders to compare robot cleaning drag vs. biofouling growth over time.</p>
 
     <!-- Sliders -->
     <div class="slider-container">
-        <label>Drag Coefficient (Cd): <span id="cdValue">1.0</span></label>
+        <label>Drag Coefficient (Cd): <span id="cdValue">0.8</span></label>
         <input type="range" id="cdSlider" min="0.1" max="1" step="0.01" value="0.8">
     </div>
 
@@ -43,13 +43,18 @@
     </div>
 
     <div class="slider-container">
-        <label>Velocity (m/s): <span id="velocityValue">10</span></label>
+        <label>Velocity (m/s): <span id="velocityValue">10.0</span></label>
         <input type="range" id="velocitySlider" min="0" max="15" step="0.05" value="10">
     </div>
 
     <div class="slider-container">
-        <label>Number of Units: <span id="unitValue">1</span></label>
+        <label>Number of Units: <span id="unitValue">10</span></label>
         <input type="number" id="unitInput" min="1" max="100" step="1" value="10">
+    </div>
+
+    <div class="slider-container">
+        <label>Days Without Cleaning: <span id="daysValue">0</span></label>
+        <input type="range" id="daysSlider" min="0" max="100" step="1" value="0">
     </div>
 
     <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
@@ -62,23 +67,45 @@
     <script>
         // Constants
         const rho = 1025; // Water density (kg/m³)
+        const L = 50; // Reference ship length (meters)
+        const A_BIO = 0.075; // Empirical constant for biofouling roughness
+        const B_BIO = 0.9; // Empirical constant for friction increase
+
+        // Biofouling Growth Model Parameters
+        const k0 = 30; // Initial roughness height (μm)
+        const k_max = 300; // Maximum roughness height (μm)
+        const G = 0.02; // Growth rate constant
 
         // Get input elements
         const cdSlider = document.getElementById("cdSlider");
         const areaSlider = document.getElementById("areaSlider");
         const velocitySlider = document.getElementById("velocitySlider");
         const unitInput = document.getElementById("unitInput");
+        const daysSlider = document.getElementById("daysSlider");
 
         // Get display elements
         const cdValue = document.getElementById("cdValue");
         const areaValue = document.getElementById("areaValue");
         const velocityValue = document.getElementById("velocityValue");
         const unitValue = document.getElementById("unitValue");
+        const daysValue = document.getElementById("daysValue");
         const dragForceDisplay = document.getElementById("dragForce");
 
-        // Function to calculate drag force per unit
+        // Function to calculate drag force per unit (Robot)
         function calculateDrag(Cd, A, v) {
             return 0.5 * Cd * rho * A * v ** 2;
+        }
+
+        // Function to calculate biofouling drag force over time
+        function calculateBiofoulingDrag(A, v, days) {
+            // Biofilm roughness height (micrometers converted to meters)
+            const ks = (k0 + (k_max - k0) * (1 - Math.exp(-G * days))) / 1e6;
+
+            // Increase in friction coefficient due to roughness
+            const delta_CF = A_BIO * Math.pow(ks / L, B_BIO);
+
+            // Increase in frictional resistance
+            return 0.5 * rho * v ** 2 * A * delta_CF;
         }
 
         // Initialize Chart.js
@@ -86,43 +113,48 @@
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: Array.from({ length: 16 }, (_, i) => i), // X-axis: 0 to 15
-                datasets: [{
-                    label: "Total Drag Force (N)",
-                    data: [],
-                    borderColor: "blue",
-                    backgroundColor: "rgba(0, 0, 255, 0.2)", // Light blue area
-                    fill: true,
-                    pointRadius: 5,
-                    pointHoverRadius: 8, // Make points larger when hovered
-                }]
+                labels: Array.from({ length: 101 }, (_, i) => i), // X-axis: 0 to 100 days
+                datasets: [
+                    {
+                        label: "Robot Cleaning Drag Force (N)",
+                        data: [],
+                        borderColor: "blue",
+                        backgroundColor: "rgba(0, 0, 255, 0.2)",
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                    },
+                    {
+                        label: "Biofouling Drag Force (N)",
+                        data: [],
+                        borderColor: "red",
+                        backgroundColor: "rgba(255, 0, 0, 0.2)",
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                    }
+                ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // Allows independent width & height
+                maintainAspectRatio: false,
                 plugins: {
                     tooltip: {
                         enabled: true,
                         mode: "nearest",
                         intersect: false,
-                        callbacks: {
-                            label: function (context) {
-                                return `Total Drag Force: ${context.raw.toFixed(2)} N`;
-                            }
-                        }
                     }
                 },
                 scales: {
-                    x: { 
-                        title: { display: true, text: "Velocity (m/s)" },
-                        min: 0,  // ✅ X-axis starts at 0
-                        max: 15, // ✅ X-axis ends at 15
-                        ticks: { stepSize: 1 } // ✅ X-axis interval is 1
+                    x: {
+                        title: { display: true, text: "Days Without Cleaning" },
+                        min: 0,
+                        max: 100,
+                        ticks: { stepSize: 10 }
                     },
-                    y: { 
+                    y: {
                         title: { display: true, text: "Total Drag Force (N)" },
-                        beginAtZero: true,
-                        suggestedMax: 1000 // Adjusts dynamically
+                        beginAtZero: true
                     }
                 }
             }
@@ -130,41 +162,30 @@
 
         // Function to update values and chart
         function updateSimulation() {
-            // Get values from inputs
             const Cd = parseFloat(cdSlider.value);
             const A = parseFloat(areaSlider.value);
             const v = parseFloat(velocitySlider.value);
-            const units = parseInt(unitInput.value); // Convert to integer
+            const units = parseInt(unitInput.value);
+            const days = parseInt(daysSlider.value);
 
-            // Update displayed values
             cdValue.textContent = Cd.toFixed(2);
             areaValue.textContent = A.toFixed(2);
             velocityValue.textContent = v.toFixed(2);
             unitValue.textContent = units;
+            daysValue.textContent = days;
 
-            // Calculate total drag force
-            const dragForcePerUnit = calculateDrag(Cd, A, v);
-            const totalDragForce = dragForcePerUnit * units;
-            dragForceDisplay.textContent = totalDragForce.toFixed(2);
-
-            // Update chart data
-            let newDragData = Array.from({ length: 16 }, (_, i) => calculateDrag(Cd, A, i) * units);
-            dragChart.data.datasets[0].data = newDragData;
-            
-            // Dynamically adjust Y-axis based on highest value
-            let maxDragForce = Math.max(...newDragData);
-            dragChart.options.scales.y.suggestedMax = maxDragForce + (0.1 * maxDragForce); // Add 10% buffer
+            dragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateDrag(Cd, A, v) * units);
+            dragChart.data.datasets[1].data = Array.from({ length: 101 }, (_, i) => calculateBiofoulingDrag(A, v, i));
             
             dragChart.update();
         }
 
-        // Event listeners for sliders and input
         cdSlider.addEventListener("input", updateSimulation);
         areaSlider.addEventListener("input", updateSimulation);
         velocitySlider.addEventListener("input", updateSimulation);
         unitInput.addEventListener("input", updateSimulation);
+        daysSlider.addEventListener("input", updateSimulation);
 
-        // Initial update
         updateSimulation();
     </script>
 
