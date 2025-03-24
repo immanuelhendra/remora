@@ -31,7 +31,7 @@
     <h2>Water Drag Force Simulation</h2>
     <p>Adjust the sliders to see how drag force changes in real-time.</p>
 
-    <!-- Sliders -->
+    <!-- Sliders for robot inputs -->
     <div class="slider-container">
         <label>Drag Coefficient (Cd) - Robot: <span id="cdValue">0.8</span></label>
         <input type="range" id="cdSlider" min="0.1" max="1" step="0.01" value="0.8">
@@ -50,6 +50,22 @@
     <div class="slider-container">
         <label>Number of Units - Robot: <span id="unitValue">10</span></label>
         <input type="number" id="unitInput" min="1" max="100" step="1" value="10">
+    </div>
+
+    <!-- Sliders for ship inputs -->
+    <div class="slider-container">
+        <label>Ship Length (m): <span id="lengthValue">100</span></label>
+        <input type="number" id="lengthInput" min="1" max="1000" step="1" value="100">
+    </div>
+
+    <div class="slider-container">
+        <label>Ship Width (m): <span id="widthValue">30</span></label>
+        <input type="number" id="widthInput" min="1" max="1000" step="1" value="30">
+    </div>
+
+    <div class="slider-container">
+        <label>Drag Height (m): <span id="heightValue">5</span></label>
+        <input type="number" id="heightInput" min="1" max="100" step="1" value="5">
     </div>
 
     <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
@@ -73,12 +89,19 @@
         const velocitySlider = document.getElementById("velocitySlider");
         const unitInput = document.getElementById("unitInput");
 
+        const lengthInput = document.getElementById("lengthInput");
+        const widthInput = document.getElementById("widthInput");
+        const heightInput = document.getElementById("heightInput");
+
         // Get display elements
         const cdValue = document.getElementById("cdValue");
         const areaValue = document.getElementById("areaValue");
         const velocityValue = document.getElementById("velocityValue");
         const unitValue = document.getElementById("unitValue");
         const dragForceDisplay = document.getElementById("dragForce");
+        const lengthValue = document.getElementById("lengthValue");
+        const widthValue = document.getElementById("widthValue");
+        const heightValue = document.getElementById("heightValue");
 
         // Function to calculate drag force per unit (Robot)
         function calculateDrag(Cd, A, v) {
@@ -169,17 +192,26 @@
             const units = parseInt(unitInput.value);
             const velocity = velocityKnots * 0.514444;  // Convert knots to m/s
 
+            const length = parseFloat(lengthInput.value);
+            const width = parseFloat(widthInput.value);
+            const dragHeight = parseFloat(heightInput.value);
+
             // Update displayed values
             cdValue.textContent = Cd_robot.toFixed(2);
             areaValue.textContent = A_robot.toFixed(2);
             velocityValue.textContent = velocityKnots.toFixed(2);
             unitValue.textContent = units;
+            lengthValue.textContent = length.toFixed(2);
+            widthValue.textContent = width.toFixed(2);
+            heightValue.textContent = dragHeight.toFixed(2);
+
+            // Calculate ship's surface area (A_ship)
+            const A_ship = length * width * dragHeight; // Front surface area of the ship
 
             // Calculate drag force for the robot
             const robotDragForce = calculateDrag(Cd_robot, A_robot, velocity) * units;
 
             // Calculate drag force for the ship (clean ship)
-            const A_ship = parseFloat(document.getElementById("unitInput").value); // Assuming this is ship's area
             const foulingThickness = maxFoulingThickness / (1 + Math.exp(-biofoulingRate * (new Date().getDay() - 180))); // Logistic growth of fouling over time
             const shipDragForce = calculateBiofoulingDragForce(Cd_clean, A_ship, foulingThickness, velocity, maxFoulingThickness);
 
@@ -207,6 +239,9 @@
         areaSlider.addEventListener("input", updateSimulation);
         velocitySlider.addEventListener("input", updateSimulation);
         unitInput.addEventListener("input", updateSimulation);
+        lengthInput.addEventListener("input", updateSimulation);
+        widthInput.addEventListener("input", updateSimulation);
+        heightInput.addEventListener("input", updateSimulation);
 
         // Initial update
         updateSimulation();
