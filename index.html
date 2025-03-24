@@ -154,9 +154,9 @@
             // Prevent invalid unit values
             if (units < 1) units = 1;
 
-            // Calculate total drag force
-            const totalDragForce = calculateDrag(Cd, A, v) * units;
-            dragForceDisplay.textContent = totalDragForce.toFixed(2);
+            // Calculate robot's drag force (robot drag = robot drag force)
+            const robotDragForce = calculateDrag(Cd, A, v) * units;
+            dragForceDisplay.textContent = robotDragForce.toFixed(2);
 
             // Get ship dimensions
             const shipLength = parseFloat(shipLengthInput.value);
@@ -166,6 +166,10 @@
             const shipArea = shipLength * shipHeight;
             const shipDragForce = calculateDrag(Cd, shipArea, v);
             shipDragForceDisplay.textContent = shipDragForce.toFixed(2);
+
+            // Calculate total drag force (sum of robot's drag force and clean ship drag force)
+            const totalDragForce = robotDragForce + shipDragForce;
+            dragForceDisplay.textContent = totalDragForce.toFixed(2);
 
             // Update chart data
             dragChart.data.datasets[0].data = Array(16).fill(totalDragForce);
