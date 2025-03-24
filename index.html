@@ -9,14 +9,15 @@
 <body>
     <h2>Drag % vs Time (Days)</h2>
     
-    <label>Robot Area (m²): <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph()"></label>
-    <label>Velocity (m/s): <input type="range" id="velocity" min="5" max="20" step="0.5" value="10" oninput="updateGraph()"></label>
+    <label id="A1">Robot Area (B1) (m²): <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph()"></label>
+    <label id="A3">Velocity (B3) (m/s): <input type="range" id="velocity" min="5" max="20" step="0.5" value="10" oninput="updateGraph()"></label>
     <label>Ship Length (m): <input type="range" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label>
     <label>Ship Width (m): <input type="range" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label>
     <label>Ship Drag Height (m): <input type="range" id="shipDragHeight" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label>
+    <label>Fouling Thickness Factor (G6): <input type="text" id="foulingFactor" value="0.002" oninput="updateGraph()"></label>
     
-    <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.7" oninput="updateGraph()"></label>
-    <label>Dirty Ship Cd: <input type="text" id="dirtyCd" value="0.9" oninput="updateGraph()"></label>
+    <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.8" oninput="updateGraph()"></label>
+    <label>Dirty Ship Cd Factor: <input type="text" id="dirtyCdFactor" value="30" oninput="updateGraph()"></label>
     <label>Robot Cd: <input type="text" id="robotCd" value="0.8" oninput="updateGraph()"></label>
     <label>Number of Robots: <input type="text" id="numRobots" value="10" oninput="updateGraph()"></label>
     <label>Max Biofouling Height (m): <input type="text" id="maxBiofoul" value="0.0045" oninput="updateGraph()"></label>
@@ -29,20 +30,24 @@
             let robotArea = parseFloat(document.getElementById("robotArea").value);
             let velocity = parseFloat(document.getElementById("velocity").value);
             let cleanCd = parseFloat(document.getElementById("cleanCd").value);
-            let dirtyCd = parseFloat(document.getElementById("dirtyCd").value);
+            let dirtyCdFactor = parseFloat(document.getElementById("dirtyCdFactor").value);
             let robotCd = parseFloat(document.getElementById("robotCd").value);
             let shipWidth = parseFloat(document.getElementById("shipWidth").value);
             let shipDragHeight = parseFloat(document.getElementById("shipDragHeight").value);
             let maxBiofoul = parseFloat(document.getElementById("maxBiofoul").value);
+            let foulingFactor = parseFloat(document.getElementById("foulingFactor").value);
             
-            let foulingThickness = (t / 180) * maxBiofoul;
-            let cleanDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * (velocity ** 2);
-            let dirtyDrag = 0.5 * 1025 * dirtyCd * ((shipWidth + 2 * foulingThickness) * (shipDragHeight + foulingThickness)) * (velocity ** 2);
-            let robotDrag = numRobots * 0.5 * 1025 * robotCd * robotArea * (velocity ** 2);
+            let B3 = velocity; 
+            let G6 = (t / 180) * foulingFactor;
+            let G2 = cleanCd * (1 + dirtyCdFactor * G6 / shipDragHeight);
+            
+            let cleanDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * B3;
+            let dirtyDrag = 0.5 * G2 * 1025 * ((shipWidth + 2 * G6) * (shipDragHeight + G6)) * B3;
+            let robotDrag = numRobots * 0.5 * 1025 * robotCd * robotArea * B3;
             
             let dragCleanShip = 100;
             let dragDirtyShip = ((dirtyDrag - cleanDrag) / cleanDrag) * 100 + 100;
-            let dragWithRobot = (robotDrag / cleanDrag) * 100 + 100;
+            let dragWithRobot = (robotDrag * velocity / cleanDrag) * 100 + 100;
             
             return { dragCleanShip, dragDirtyShip, dragWithRobot };
         }
