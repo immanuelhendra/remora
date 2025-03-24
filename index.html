@@ -14,7 +14,7 @@
     <label>Ship Length (m): <input type="range" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label>
     <label>Ship Width (m): <input type="range" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label>
     <label>Ship Drag Height (m): <input type="range" id="shipDragHeight" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label>
-    <label>Fouling Thickness Factor (G6): <input type="text" id="foulingFactor" value="0.002" oninput="updateGraph()"></label>
+    
     
     <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.8" oninput="updateGraph()"></label>
     
@@ -35,7 +35,7 @@
             let shipWidth = parseFloat(document.getElementById("shipWidth").value);
             let shipDragHeight = parseFloat(document.getElementById("shipDragHeight").value);
             let maxBiofoul = parseFloat(document.getElementById("maxBiofoul").value);
-            let foulingFactor = parseFloat(document.getElementById("foulingFactor").value);
+            
             
             let shipVelocity = velocity; 
             let foulingThickness = maxBiofoul / (1 + (maxBiofoul * 10000 - 1) * Math.exp(-0.1 * t));
