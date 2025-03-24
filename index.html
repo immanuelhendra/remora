@@ -68,14 +68,12 @@
         const widthSlider = document.getElementById("widthSlider");
         const heightSlider = document.getElementById("heightSlider");
         const velocitySlider = document.getElementById("velocitySlider");
-        const unitInput = document.getElementById("unitInput");
 
         // Get display elements
         const lengthValue = document.getElementById("lengthValue");
         const widthValue = document.getElementById("widthValue");
         const heightValue = document.getElementById("heightValue");
         const velocityValue = document.getElementById("velocityValue");
-        const unitValue = document.getElementById("unitValue");
         const dragForceDisplay = document.getElementById("dragForce");
 
         // Function to calculate drag force for the ship
@@ -138,23 +136,15 @@
             const W = parseFloat(widthSlider.value);
             const H = parseFloat(heightSlider.value);
             const vKnots = parseFloat(velocitySlider.value);
-            let units = parseInt(unitInput.value);
 
             // Convert velocity from knots to m/s
             const v = vKnots * 0.514444;  // 1 knot = 0.514444 m/s
-
-            // Prevent units from being zero or negative
-            if (units < 1) {
-                units = 1;
-                unitInput.value = 1;
-            }
 
             // Update displayed values
             lengthValue.textContent = L.toFixed(2);
             widthValue.textContent = W.toFixed(2);
             heightValue.textContent = H.toFixed(2);
             velocityValue.textContent = vKnots.toFixed(2);
-            unitValue.textContent = units;
 
             // Calculate drag force for the ship
             const shipDragForce = calculateShipDrag(L, W, H, v);
@@ -171,12 +161,11 @@
             dragChart.update();
         }
 
-        // Event listeners for sliders and input
+        // Event listeners for sliders
         lengthSlider.addEventListener("input", updateSimulation);
         widthSlider.addEventListener("input", updateSimulation);
         heightSlider.addEventListener("input", updateSimulation);
         velocitySlider.addEventListener("input", updateSimulation);
-        unitInput.addEventListener("input", updateSimulation);
 
         // Initial update
         updateSimulation();
