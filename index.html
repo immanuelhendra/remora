@@ -75,14 +75,20 @@
         <input type="range" id="daysSlider" min="0" max="100" step="1" value="0">
     </div>
 
-    <!-- Separate Total Drag Forces -->
-    <h3>Total Drag Force</h3>
+    <!-- Drag Forces Display -->
+    <h3>Drag Forces</h3>
     <p><strong>Robot Drag Force:</strong> <span id="robotDragForce">0</span> N</p>
     <p><strong>Biofouling Drag Force (Additional):</strong> <span id="biofoulingDragForce">0</span> N</p>
 
     <!-- Graph Container -->
     <div class="chart-container">
-        <canvas id="dragChart"></canvas>
+        <h4>Robot Drag Force</h4>
+        <canvas id="robotDragChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <h4>Biofouling Drag Force</h4>
+        <canvas id="biofoulingDragChart"></canvas>
     </div>
 
     <script>
@@ -117,15 +123,39 @@
             return 0.5 * rho * v ** 2 * A_bio * delta_CF;
         }
 
-        // Initialize Chart.js
-        const ctx = document.getElementById("dragChart").getContext("2d");
-        let dragChart = new Chart(ctx, {
+        // Initialize Chart.js for Robot Drag Force
+        const robotCtx = document.getElementById("robotDragChart").getContext("2d");
+        let robotDragChart = new Chart(robotCtx, {
             type: "line",
             data: {
                 labels: Array.from({ length: 101 }, (_, i) => i),
                 datasets: [
-                    { label: "Robot Drag Force (N)", data: [], borderColor: "blue", backgroundColor: "rgba(0, 0, 255, 0.2)", fill: true },
-                    { label: "Biofouling Drag Force (N)", data: [], borderColor: "red", backgroundColor: "rgba(255, 0, 0, 0.2)", fill: true }
+                    {
+                        label: "Robot Drag Force (N)",
+                        data: [],
+                        borderColor: "blue",
+                        backgroundColor: "rgba(0, 0, 255, 0.2)",
+                        fill: true
+                    }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Initialize Chart.js for Biofouling Drag Force
+        const biofoulingCtx = document.getElementById("biofoulingDragChart").getContext("2d");
+        let biofoulingDragChart = new Chart(biofoulingCtx, {
+            type: "line",
+            data: {
+                labels: Array.from({ length: 101 }, (_, i) => i),
+                datasets: [
+                    {
+                        label: "Biofouling Drag Force (N)",
+                        data: [],
+                        borderColor: "red",
+                        backgroundColor: "rgba(255, 0, 0, 0.2)",
+                        fill: true
+                    }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }
@@ -143,30 +173,23 @@
             const D = parseFloat(shipDraftSlider.value);
             const A_ship = calculateShipArea(L, W, D);
 
-            // Calculate drag force for robot
+            // Calculate robot drag force
             const robotDrag = calculateDrag(Cd, A, v) * units;
 
-            // Calculate additional biofouling drag force
+            // Calculate biofouling drag force
             const biofoulingDrag = calculateBiofoulingDrag(A_ship, v, days, L, W);
-
-            // Update displayed values
-            document.getElementById("cdValue").textContent = Cd;
-            document.getElementById("areaValue").textContent = A;
-            document.getElementById("velocityValue").textContent = v;
-            document.getElementById("unitValue").textContent = units;
-            document.getElementById("daysValue").textContent = days;
-            document.getElementById("shipLengthValue").textContent = L;
-            document.getElementById("shipWidthValue").textContent = W;
-            document.getElementById("shipDraftValue").textContent = D;
 
             // Update displayed drag forces
             document.getElementById("robotDragForce").textContent = robotDrag.toFixed(2);
             document.getElementById("biofoulingDragForce").textContent = biofoulingDrag.toFixed(2);
 
-            // Update chart data
-            dragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateDrag(Cd, A, v) * units);
-            dragChart.data.datasets[1].data = Array.from({ length: 101 }, (_, i) => calculateBiofoulingDrag(A_ship, v, i, L, W));
-            dragChart.update();
+            // Update robot drag chart
+            robotDragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateDrag(Cd, A, v) * units);
+            robotDragChart.update();
+
+            // Update biofouling drag chart
+            biofoulingDragChart.data.datasets[0].data = Array.from({ length: 101 }, (_, i) => calculateBiofoulingDrag(A_ship, v, i, L, W));
+            biofoulingDragChart.update();
         }
 
         // Event listeners for inputs
