@@ -3,147 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ship Drag Force Percentage</title>
+    <title>Ship Drag Force Simulation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-        .slider-container { margin: 10px; }
-        .chart-container { width: 90%; max-width: 900px; margin: auto; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .slider-container {
+            margin: 10px;
+        }
+        .chart-container {
+            width: 90%;
+            max-width: 900px;
+            margin: auto;
+        }
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 80vh;
+        }
     </style>
 </head>
 <body>
-    <h2>Ship Drag Force Percentage Over Time</h2>
-    
-    <div class="slider-container">
-        <label>Ship Length (m): <span id="lengthValue">200</span></label>
-        <input type="range" id="lengthSlider" min="10" max="500" step="10" value="200">
-    </div>
-    
-    <div class="slider-container">
-        <label>Ship Width (m): <span id="widthValue">20</span></label>
-        <input type="range" id="widthSlider" min="5" max="50" step="1" value="20">
-    </div>
-    
-    <div class="slider-container">
-        <label>Drag Height (m): <span id="heightValue">10</span></label>
-        <input type="range" id="heightSlider" min="1" max="20" step="1" value="10">
-    </div>
-    
-    <div class="slider-container">
-        <label>Clean Ship Cd: <span id="cdValue">0.7</span></label>
-        <input type="range" id="cdSlider" min="0" max="1" step="0.1" value="0.7">
-    </div>
-    
-    <div class="slider-container">
-        <label>Velocity (knots): <span id="velocityValue">10</span></label>
-        <input type="range" id="velocitySlider" min="0" max="30" step="1" value="10">
-    </div>
-    
-    <div class="slider-container">
-        <label>Robot Frontal Area (m²): <span id="robotAreaValue">0.2</span></label>
-        <input type="range" id="robotAreaSlider" min="0" max="1" step="0.05" value="0.2">
-    </div>
-    
-    <div class="slider-container">
-        <label>Number of Robots: <span id="numRobotsValue">1</span></label>
-        <input type="range" id="numRobotsSlider" min="1" max="10" step="1" value="1">
-    </div>
-    
-    <h3>Drag Force Percentage</h3>
+
+    <h2>Ship Drag Force Simulation</h2>
+    <p>Adjust the sliders to see how drag force changes over time.</p>
+
+    <h3>Drag Force Increase (%) Over Time</h3>
+
     <div class="chart-container">
         <canvas id="dragChart"></canvas>
     </div>
-    
+
     <script>
-        const rho = 1025; // Water density (kg/m³)
-        
-        const lengthSlider = document.getElementById("lengthSlider");
-        const widthSlider = document.getElementById("widthSlider");
-        const heightSlider = document.getElementById("heightSlider");
-        const cdSlider = document.getElementById("cdSlider");
-        const velocitySlider = document.getElementById("velocitySlider");
-        const robotAreaSlider = document.getElementById("robotAreaSlider");
-        const numRobotsSlider = document.getElementById("numRobotsSlider");
-        
-        const lengthValue = document.getElementById("lengthValue");
-        const widthValue = document.getElementById("widthValue");
-        const heightValue = document.getElementById("heightValue");
-        const cdValue = document.getElementById("cdValue");
-        const velocityValue = document.getElementById("velocityValue");
-        const robotAreaValue = document.getElementById("robotAreaValue");
-        const numRobotsValue = document.getElementById("numRobotsValue");
-        
-        function calculateCleanShipDrag(L, W, H, Cd, v) {
-            const A = W * H;
-            return 0.5 * Cd * rho * A * v ** 2;
+        // Constants
+        const rho = 1025; // Water density (kg/m³), always assumed to be 1025
+        const timeDays = Array.from({ length: 16 }, (_, i) => i); // Time in days
+
+        // Sample calculation for drag force increase
+        function calculateDragIncrease(days) {
+            let cleanShipDrag = 100; // Assume clean ship drag as 100%
+            let dragIncrease = cleanShipDrag + days * 5; // Example increase over time
+            return Math.min(dragIncrease, 200); // Capped at 200%
         }
-        
-        function calculateTotalDrag(cleanShipDrag, numRobots, robotArea, v) {
-            const robotCd = 0.8;
-            const robotDrag = 0.5 * numRobots * robotCd * rho * robotArea * v ** 2;
-            return cleanShipDrag + robotDrag;
-        }
-        
+
+        // Generate data
+        let dragData = timeDays.map(calculateDragIncrease);
+
+        // Initialize Chart.js
         const ctx = document.getElementById("dragChart").getContext("2d");
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: Array.from({ length: 16 }, (_, i) => i),
-                datasets: [
-                    {
-                        label: "Clean Ship Drag Force (%)",
-                        data: Array(16).fill(100),
-                        borderColor: "blue",
-                        backgroundColor: "rgba(0, 0, 255, 0.2)",
-                        fill: false,
-                        borderDash: [5, 5],
-                    },
-                    {
-                        label: "Ship + Robot Drag Force (%)",
-                        data: [],
-                        borderColor: "red",
-                        backgroundColor: "rgba(255, 0, 0, 0.2)",
-                        fill: false
-                    }
-                ]
+                labels: timeDays,
+                datasets: [{
+                    label: "Drag Force Increase (%)",
+                    data: dragData,
+                    borderColor: "red",
+                    backgroundColor: "rgba(255, 0, 0, 0.2)",
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { title: { display: true, text: "Time (Days)" } },
-                    y: { title: { display: true, text: "Drag Force (%)" }, beginAtZero: true }
+                    x: {
+                        title: { display: true, text: "Time (Days)" },
+                        min: 0,
+                        max: 15,
+                        ticks: { stepSize: 1 }
+                    },
+                    y: {
+                        title: { display: true, text: "Drag Force Increase (%)" },
+                        min: 100,
+                        max: 200,
+                        ticks: { stepSize: 1 }
+                    }
                 }
             }
         });
-        
-        function updateSimulation() {
-            const L = parseFloat(lengthSlider.value);
-            const W = parseFloat(widthSlider.value);
-            const H = parseFloat(heightSlider.value);
-            const Cd = parseFloat(cdSlider.value);
-            const v = parseFloat(velocitySlider.value) * 0.514444;
-            const robotArea = parseFloat(robotAreaSlider.value);
-            const numRobots = parseInt(numRobotsSlider.value);
-            
-            lengthValue.textContent = L;
-            widthValue.textContent = W;
-            heightValue.textContent = H;
-            cdValue.textContent = Cd;
-            velocityValue.textContent = velocitySlider.value;
-            robotAreaValue.textContent = robotArea;
-            numRobotsValue.textContent = numRobots;
-            
-            const cleanShipDrag = calculateCleanShipDrag(L, W, H, Cd, v);
-            const totalDrag = calculateTotalDrag(cleanShipDrag, numRobots, robotArea, v);
-            const dragPercentage = ((totalDrag - cleanShipDrag) / cleanShipDrag) * 100;
-            
-            dragChart.data.datasets[1].data = Array(16).fill(dragPercentage + 100);
-            dragChart.update();
-        }
-        
-        [lengthSlider, widthSlider, heightSlider, cdSlider, velocitySlider, robotAreaSlider, numRobotsSlider].forEach(el => el.addEventListener("input", updateSimulation));
-        updateSimulation();
     </script>
+
 </body>
 </html>
