@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Water Drag Force Simulation with Biofouling</title>
+    <title>Water Drag Force Simulation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -29,47 +29,27 @@
 <body>
 
     <h2>Water Drag Force Simulation</h2>
-    <p>Adjust the sliders to see how drag force changes over time, considering clean ship, robot, and biofouling effects.</p>
+    <p>Adjust the sliders to see how drag force changes in real-time.</p>
 
     <!-- Sliders -->
     <div class="slider-container">
-        <label>Drag Coefficient (Cd): <span id="cdValue">0.8</span></label>
+        <label>Drag Coefficient (Cd) - Robot: <span id="cdValue">0.8</span></label>
         <input type="range" id="cdSlider" min="0.1" max="1" step="0.01" value="0.8">
     </div>
 
     <div class="slider-container">
-        <label>Front Surface Area (m²): <span id="areaValue">1.0</span></label>
+        <label>Front Surface Area (m²) - Robot: <span id="areaValue">1.0</span></label>
         <input type="range" id="areaSlider" min="0.1" max="5.0" step="0.05" value="1.0">
     </div>
 
     <div class="slider-container">
-        <label>Velocity (m/s): <span id="velocityValue">10.0</span></label>
+        <label>Speed (knots): <span id="velocityValue">10.0</span></label>
         <input type="range" id="velocitySlider" min="0" max="15" step="0.1" value="10">
     </div>
 
     <div class="slider-container">
-        <label>Number of Units: <span id="unitValue">10</span></label>
+        <label>Number of Units - Robot: <span id="unitValue">10</span></label>
         <input type="number" id="unitInput" min="1" max="100" step="1" value="10">
-    </div>
-
-    <div class="slider-container">
-        <label>Ship Length (m): <span id="lengthValue">20</span></label>
-        <input type="number" id="lengthSlider" min="10" max="500" step="1" value="200">
-    </div>
-
-    <div class="slider-container">
-        <label>Ship Width (m): <span id="widthValue">5</span></label>
-        <input type="number" id="widthSlider" min="1" max="50" step="1" value="10">
-    </div>
-
-    <div class="slider-container">
-        <label>Biofouling Growth Rate (k): <span id="growthRateValue">0.1</span></label>
-        <input type="number" id="growthRateSlider" min="0" max="0.5" step="0.01" value="0.2">
-    </div>
-
-    <div class="slider-container">
-        <label>Maximum Fouling Thickness (mm): <span id="maxThicknessValue">45</span></label>
-        <input type="number" id="maxThicknessSlider" min="1" max="100" step="1" value="45">
     </div>
 
     <h3>Total Drag Force: <span id="dragForce">0</span> N</h3>
@@ -82,36 +62,40 @@
     <script>
         // Constants
         const rho = 1025; // Water density (kg/m³)
+        const maxFoulingThickness = 0.045; // Maximum fouling thickness in meters (45mm)
+        const Cd_clean = 0.003; // Clean ship drag coefficient
+        const Cd_biofouledMax = 0.01; // Maximum drag coefficient when fully biofouled (e.g., for a heavily biofouled hull)
+        const biofoulingRate = 0.01; // Biofouling rate constant for logistic growth
 
         // Get input elements
         const cdSlider = document.getElementById("cdSlider");
         const areaSlider = document.getElementById("areaSlider");
         const velocitySlider = document.getElementById("velocitySlider");
         const unitInput = document.getElementById("unitInput");
-        const lengthSlider = document.getElementById("lengthSlider");
-        const widthSlider = document.getElementById("widthSlider");
-        const growthRateSlider = document.getElementById("growthRateSlider");
-        const maxThicknessSlider = document.getElementById("maxThicknessSlider");
 
         // Get display elements
         const cdValue = document.getElementById("cdValue");
         const areaValue = document.getElementById("areaValue");
         const velocityValue = document.getElementById("velocityValue");
         const unitValue = document.getElementById("unitValue");
-        const lengthValue = document.getElementById("lengthValue");
-        const widthValue = document.getElementById("widthValue");
-        const growthRateValue = document.getElementById("growthRateValue");
-        const maxThicknessValue = document.getElementById("maxThicknessValue");
         const dragForceDisplay = document.getElementById("dragForce");
 
-        // Function to calculate drag force per unit
+        // Function to calculate drag force per unit (Robot)
         function calculateDrag(Cd, A, v) {
             return 0.5 * Cd * rho * A * v ** 2;
         }
 
-        // Logistic Growth Model for Biofouling
-        function calculateFoulingThickness(k, Mmax, t) {
-            return Mmax / (1 + (Mmax / 0) * Math.exp(-k * t));  // Assuming M(0) = 0
+        // Function to calculate fouled drag coefficient based on fouling thickness
+        function calculateFouledCd(Cd_clean, foulingThickness, maxFoulingThickness) {
+            const foulingFactor = foulingThickness / maxFoulingThickness;  // Normalized fouling thickness (0 to 1)
+            const Cd_biofouled = Cd_clean + (Cd_biofouledMax - Cd_clean) * foulingFactor;  // Linear increase
+            return Math.min(Cd_biofouled, Cd_biofouledMax);  // Cap Cd at max fouled value
+        }
+
+        // Function to calculate the biofouling drag force using fouled Cd
+        function calculateBiofoulingDragForce(Cd_clean, A, foulingThickness, v, maxFoulingThickness) {
+            const Cd_fouled = calculateFouledCd(Cd_clean, foulingThickness, maxFoulingThickness);
+            return calculateDrag(Cd_fouled, A, v);
         }
 
         // Initialize Chart.js
@@ -119,7 +103,7 @@
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: Array.from({ length: 31 }, (_, i) => i), // X-axis: time (0 to 30 days)
+                labels: Array.from({ length: 365 }, (_, i) => i), // X-axis: Days from 0 to 365
                 datasets: [
                     {
                         label: "Clean Ship Drag Force (N)",
@@ -127,8 +111,6 @@
                         borderColor: "blue",
                         backgroundColor: "rgba(0, 0, 255, 0.2)",
                         fill: true,
-                        pointRadius: 5,
-                        pointHoverRadius: 8,
                     },
                     {
                         label: "Clean Ship + Robot Drag Force (N)",
@@ -136,8 +118,6 @@
                         borderColor: "green",
                         backgroundColor: "rgba(0, 255, 0, 0.2)",
                         fill: true,
-                        pointRadius: 5,
-                        pointHoverRadius: 8,
                     },
                     {
                         label: "Clean Ship + Biofouling Drag Force (N)",
@@ -145,8 +125,6 @@
                         borderColor: "red",
                         backgroundColor: "rgba(255, 0, 0, 0.2)",
                         fill: true,
-                        pointRadius: 5,
-                        pointHoverRadius: 8,
                     }
                 ]
             },
@@ -160,21 +138,23 @@
                         intersect: false,
                         callbacks: {
                             label: function (context) {
-                                return `Drag Force: ${context.raw.toExponential(3)} N`;
+                                return `Total Drag Force: ${context.raw.toExponential(3)} N`;
                             }
                         }
                     }
                 },
                 scales: {
-                    x: { 
-                        title: { display: true, text: "Time (days)" },
-                        min: 0,  
-                        max: 30, 
-                        ticks: { stepSize: 1 } 
+                    x: {
+                        title: { display: true, text: "Time (Days)" },
                     },
-                    y: { 
+                    y: {
                         title: { display: true, text: "Drag Force (N)" },
-                        beginAtZero: false
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toExponential(3); // Display in scientific notation
+                            }
+                        }
                     }
                 }
             }
@@ -182,47 +162,51 @@
 
         // Function to update values and chart
         function updateSimulation() {
-            const Cd = parseFloat(cdSlider.value);
-            const A = parseFloat(areaSlider.value);
-            const velocity = parseFloat(velocitySlider.value);
+            // Get values from inputs
+            const Cd_robot = parseFloat(cdSlider.value);
+            const A_robot = parseFloat(areaSlider.value);
+            const velocityKnots = parseFloat(velocitySlider.value);
             const units = parseInt(unitInput.value);
-            const length = parseFloat(lengthSlider.value);
-            const width = parseFloat(widthSlider.value);
-            const k = parseFloat(growthRateSlider.value);
-            const Mmax = parseFloat(maxThicknessSlider.value);
-            const days = 30; // simulate for 30 days
+            const velocity = velocityKnots * 0.514444;  // Convert knots to m/s
 
-            // Clean ship drag force (constant)
-            const cleanShipDragForce = calculateDrag(Cd, A, velocity);
+            // Update displayed values
+            cdValue.textContent = Cd_robot.toFixed(2);
+            areaValue.textContent = A_robot.toFixed(2);
+            velocityValue.textContent = velocityKnots.toFixed(2);
+            unitValue.textContent = units;
 
-            // Clean ship + robot drag force
-            const robotDragForce = calculateDrag(Cd, A, velocity) * units;
-            const cleanShipPlusRobot = cleanShipDragForce + robotDragForce;
+            // Calculate drag force for the robot
+            const robotDragForce = calculateDrag(Cd_robot, A_robot, velocity) * units;
 
-            // Calculate biofouling drag force
-            let foulingDragForce = [];
-            for (let t = 0; t <= days; t++) {
-                let foulingThickness = calculateFoulingThickness(k, Mmax, t);
-                foulingDragForce.push(cleanShipDragForce * (1 + 0.03 * foulingThickness));
+            // Calculate drag force for the ship (clean ship)
+            const A_ship = parseFloat(document.getElementById("unitInput").value); // Assuming this is ship's area
+            const foulingThickness = maxFoulingThickness / (1 + Math.exp(-biofoulingRate * (new Date().getDay() - 180))); // Logistic growth of fouling over time
+            const shipDragForce = calculateBiofoulingDragForce(Cd_clean, A_ship, foulingThickness, velocity, maxFoulingThickness);
+
+            // Update chart data
+            let cleanShipData = [];
+            let robotWithShipData = [];
+            let foulingShipData = [];
+
+            for (let i = 0; i <= 365; i++) {
+                const shipDrag = calculateBiofoulingDragForce(Cd_clean, A_ship, foulingThickness, velocity, maxFoulingThickness);
+                cleanShipData.push(shipDrag);
+                robotWithShipData.push(shipDrag + robotDragForce);
+                foulingShipData.push(shipDrag + robotDragForce); // Add fouling to total drag force
             }
 
-            // Update the chart
-            dragChart.data.datasets[0].data = Array(days + 1).fill(cleanShipDragForce);
-            dragChart.data.datasets[1].data = Array(days + 1).fill(cleanShipPlusRobot);
-            dragChart.data.datasets[2].data = foulingDragForce;
+            dragChart.data.datasets[0].data = cleanShipData;
+            dragChart.data.datasets[1].data = robotWithShipData;
+            dragChart.data.datasets[2].data = foulingShipData;
 
             dragChart.update();
         }
 
-        // Event listeners for sliders
+        // Event listeners for sliders and input
         cdSlider.addEventListener("input", updateSimulation);
         areaSlider.addEventListener("input", updateSimulation);
         velocitySlider.addEventListener("input", updateSimulation);
         unitInput.addEventListener("input", updateSimulation);
-        lengthSlider.addEventListener("input", updateSimulation);
-        widthSlider.addEventListener("input", updateSimulation);
-        growthRateSlider.addEventListener("input", updateSimulation);
-        maxThicknessSlider.addEventListener("input", updateSimulation);
 
         // Initial update
         updateSimulation();
