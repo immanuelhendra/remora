@@ -3,122 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ship Drag Force Simulation</title>
+    <title>Ship Drag Force Percentage</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-        .slider-container {
-            margin: 10px;
-        }
-        .chart-container {
-            width: 90%;
-            max-width: 900px;
-            margin: auto;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        .slider-container { margin: 10px; }
+        .chart-container { width: 90%; max-width: 900px; margin: auto; }
     </style>
 </head>
 <body>
-    <h2>Ship Drag Force Simulation</h2>
+    <h2>Ship Drag Force Percentage Over Time</h2>
+    
     <div class="slider-container">
         <label>Ship Length (m): <span id="lengthValue">200</span></label>
-        <input type="number" id="lengthInput" min="10" max="500" value="200">
+        <input type="range" id="lengthSlider" min="10" max="500" step="10" value="200">
     </div>
+    
     <div class="slider-container">
         <label>Ship Width (m): <span id="widthValue">20</span></label>
-        <input type="number" id="widthInput" min="5" max="50" value="20">
+        <input type="range" id="widthSlider" min="5" max="50" step="1" value="20">
     </div>
+    
     <div class="slider-container">
-        <label>Ship Drag Height (m): <span id="heightValue">10</span></label>
-        <input type="number" id="heightInput" min="1" max="20" value="10">
+        <label>Drag Height (m): <span id="heightValue">10</span></label>
+        <input type="range" id="heightSlider" min="1" max="20" step="1" value="10">
     </div>
+    
     <div class="slider-container">
-        <label>Clean Ship Cd: <span id="cdValue">0.8</span></label>
-        <input type="range" id="cdSlider" min="0" max="1" step="0.1" value="0.8">
+        <label>Clean Ship Cd: <span id="cdValue">0.7</span></label>
+        <input type="range" id="cdSlider" min="0" max="1" step="0.1" value="0.7">
     </div>
+    
     <div class="slider-container">
         <label>Velocity (knots): <span id="velocityValue">10</span></label>
         <input type="range" id="velocitySlider" min="0" max="30" step="1" value="10">
     </div>
+    
     <div class="slider-container">
-        <label>Robot Frontal Area (m²): <span id="robotAreaValue">0.5</span></label>
-        <input type="range" id="robotAreaSlider" min="0" max="1" step="0.05" value="0.5">
+        <label>Robot Frontal Area (m²): <span id="robotAreaValue">0.2</span></label>
+        <input type="range" id="robotAreaSlider" min="0" max="1" step="0.05" value="0.2">
     </div>
+    
     <div class="slider-container">
-        <label>Number of Robots: <span id="robotCountValue">1</span></label>
-        <input type="number" id="robotCountInput" min="1" max="10" value="1">
+        <label>Number of Robots: <span id="numRobotsValue">1</span></label>
+        <input type="range" id="numRobotsSlider" min="1" max="10" step="1" value="1">
     </div>
-    <h3>Clean Ship Drag Force: <span id="cleanShipDragForce">0</span> N</h3>
-    <h3>Total Drag Force (Ship + Robot): <span id="totalDragForce">0</span> N</h3>
+    
+    <h3>Drag Force Percentage</h3>
     <div class="chart-container">
         <canvas id="dragChart"></canvas>
     </div>
+    
     <script>
-        const rho = 1025;
-        const lengthInput = document.getElementById("lengthInput");
-        const widthInput = document.getElementById("widthInput");
-        const heightInput = document.getElementById("heightInput");
+        const rho = 1025; // Water density (kg/m³)
+        
+        const lengthSlider = document.getElementById("lengthSlider");
+        const widthSlider = document.getElementById("widthSlider");
+        const heightSlider = document.getElementById("heightSlider");
         const cdSlider = document.getElementById("cdSlider");
         const velocitySlider = document.getElementById("velocitySlider");
         const robotAreaSlider = document.getElementById("robotAreaSlider");
-        const robotCountInput = document.getElementById("robotCountInput");
-        const cleanShipDragForceDisplay = document.getElementById("cleanShipDragForce");
-        const totalDragForceDisplay = document.getElementById("totalDragForce");
+        const numRobotsSlider = document.getElementById("numRobotsSlider");
+        
+        const lengthValue = document.getElementById("lengthValue");
+        const widthValue = document.getElementById("widthValue");
+        const heightValue = document.getElementById("heightValue");
+        const cdValue = document.getElementById("cdValue");
+        const velocityValue = document.getElementById("velocityValue");
+        const robotAreaValue = document.getElementById("robotAreaValue");
+        const numRobotsValue = document.getElementById("numRobotsValue");
+        
+        function calculateCleanShipDrag(L, W, H, Cd, v) {
+            const A = W * H;
+            return 0.5 * Cd * rho * A * v ** 2;
+        }
+        
+        function calculateTotalDrag(cleanShipDrag, numRobots, robotArea, v) {
+            const robotCd = 0.8;
+            const robotDrag = 0.5 * numRobots * robotCd * rho * robotArea * v ** 2;
+            return cleanShipDrag + robotDrag;
+        }
+        
         const ctx = document.getElementById("dragChart").getContext("2d");
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: ["Start", "End"],
-                datasets: [{
-                    label: "Clean Ship Drag Force (N)",
-                    data: [0, 0],
-                    borderColor: "blue",
-                    backgroundColor: "rgba(0, 0, 255, 0.2)",
-                    fill: true,
-                }, {
-                    label: "Total Drag Force (Ship + Robot) (N)",
-                    data: [0, 0],
-                    borderColor: "green",
-                    backgroundColor: "rgba(0, 255, 0, 0.2)",
-                    fill: true,
-                }]
+                labels: Array.from({ length: 16 }, (_, i) => i),
+                datasets: [
+                    {
+                        label: "Clean Ship Drag Force (%)",
+                        data: Array(16).fill(100),
+                        borderColor: "blue",
+                        backgroundColor: "rgba(0, 0, 255, 0.2)",
+                        fill: false,
+                        borderDash: [5, 5],
+                    },
+                    {
+                        label: "Ship + Robot Drag Force (%)",
+                        data: [],
+                        borderColor: "red",
+                        backgroundColor: "rgba(255, 0, 0, 0.2)",
+                        fill: false
+                    }
+                ]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: false }
+                    x: { title: { display: true, text: "Time (Days)" } },
+                    y: { title: { display: true, text: "Drag Force (%)" }, beginAtZero: true }
                 }
             }
         });
+        
         function updateSimulation() {
-            const L = parseFloat(lengthInput.value);
-            const W = parseFloat(widthInput.value);
-            const H = parseFloat(heightInput.value);
+            const L = parseFloat(lengthSlider.value);
+            const W = parseFloat(widthSlider.value);
+            const H = parseFloat(heightSlider.value);
             const Cd = parseFloat(cdSlider.value);
-            const vKnots = parseFloat(velocitySlider.value);
+            const v = parseFloat(velocitySlider.value) * 0.514444;
             const robotArea = parseFloat(robotAreaSlider.value);
-            const numRobots = parseInt(robotCountInput.value);
-            const v = vKnots * 0.514444;
-            const A = W * H;
-            const cleanShipDragForce = 0.5 * Cd * rho * A * v ** 2;
-            const robotDragForce = 0.5 * numRobots * 0.8 * rho * robotArea * v ** 2;
-            const totalDragForce = cleanShipDragForce + robotDragForce;
-            cleanShipDragForceDisplay.textContent = cleanShipDragForce.toFixed(2);
-            totalDragForceDisplay.textContent = totalDragForce.toFixed(2);
-            dragChart.data.datasets[0].data = [cleanShipDragForce, cleanShipDragForce];
-            dragChart.data.datasets[1].data = [totalDragForce, totalDragForce];
+            const numRobots = parseInt(numRobotsSlider.value);
+            
+            lengthValue.textContent = L;
+            widthValue.textContent = W;
+            heightValue.textContent = H;
+            cdValue.textContent = Cd;
+            velocityValue.textContent = velocitySlider.value;
+            robotAreaValue.textContent = robotArea;
+            numRobotsValue.textContent = numRobots;
+            
+            const cleanShipDrag = calculateCleanShipDrag(L, W, H, Cd, v);
+            const totalDrag = calculateTotalDrag(cleanShipDrag, numRobots, robotArea, v);
+            const dragPercentage = ((totalDrag - cleanShipDrag) / cleanShipDrag) * 100;
+            
+            dragChart.data.datasets[1].data = Array(16).fill(dragPercentage + 100);
             dragChart.update();
         }
-        lengthInput.addEventListener("input", updateSimulation);
-        widthInput.addEventListener("input", updateSimulation);
-        heightInput.addEventListener("input", updateSimulation);
-        cdSlider.addEventListener("input", updateSimulation);
-        velocitySlider.addEventListener("input", updateSimulation);
-        robotAreaSlider.addEventListener("input", updateSimulation);
-        robotCountInput.addEventListener("input", updateSimulation);
+        
+        [lengthSlider, widthSlider, heightSlider, cdSlider, velocitySlider, robotAreaSlider, numRobotsSlider].forEach(el => el.addEventListener("input", updateSimulation));
         updateSimulation();
     </script>
 </body>
