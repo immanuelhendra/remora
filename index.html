@@ -43,7 +43,7 @@
     </div>
 
     <div class="slider-container">
-        <label>Velocity (m/s): <span id="velocityValue">10.0</span></label>
+        <label>Initial Velocity (m/s): <span id="velocityValue">10.0</span></label>
         <input type="range" id="velocitySlider" min="0" max="15" step="0.1" value="10">
     </div>
 
@@ -86,7 +86,7 @@
         let dragChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: Array.from({ length: 16 }, (_, i) => i), // X-axis: 0 to 15
+                labels: Array.from({ length: 16 }, (_, i) => i), // X-axis: Time from 0 to 15 seconds
                 datasets: [{
                     label: "Total Drag Force (N)",
                     data: [],
@@ -114,7 +114,7 @@
                 },
                 scales: {
                     x: { 
-                        title: { display: true, text: "Velocity (m/s)" },
+                        title: { display: true, text: "Time (s)" },
                         min: 0,  
                         max: 15, 
                         ticks: { stepSize: 1 } 
@@ -147,20 +147,27 @@
             velocityValue.textContent = v.toFixed(2);
             unitValue.textContent = units;
 
-            // Calculate total drag force
-            const dragForcePerUnit = calculateDrag(Cd, A, v);
-            const totalDragForce = dragForcePerUnit * units;
-            dragForceDisplay.textContent = totalDragForce.toFixed(2);
+            // Simulate time-based velocity increase (for simplicity, linearly increasing)
+            const timeStep = 1; // seconds
+            const maxTime = 15; // maximum time for the graph
+            const velocities = Array.from({ length: maxTime + 1 }, (_, i) => v + i * 0.5); // velocity increases by 0.5 m/s each second
 
-            // Update chart data
-            let newDragData = Array.from({ length: 16 }, (_, i) => calculateDrag(Cd, A, i) * units);
-            dragChart.data.datasets[0].data = newDragData;
+            // Calculate drag force data based on velocity over time
+            let newDragData = velocities.map(velocity => calculateDrag(Cd, A, velocity) * units);
             
+            // Update chart data
+            dragChart.data.datasets[0].data = newDragData;
+
             // Dynamically adjust Y-axis based on highest value
             let maxDragForce = Math.max(...newDragData);
             dragChart.options.scales.y.max = maxDragForce * 1.2; // 20% buffer for better visualization
             
             dragChart.update();
+
+            // Calculate and display total drag force at current velocity
+            const dragForcePerUnit = calculateDrag(Cd, A, v);
+            const totalDragForce = dragForcePerUnit * units;
+            dragForceDisplay.textContent = totalDragForce.toFixed(2);
         }
 
         // Event listeners for sliders and input
