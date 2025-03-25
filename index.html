@@ -89,15 +89,13 @@
             // Adjusted drag coefficient due to fouling
             let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDraft);
 
-            // Wetted area of the ship (clean)
-            let cleanShipArea = shipLength * (shipWidth + 2 * shipDraft);
+           // Frontal area of ship (clean and biofouled)
+let cleanShipArea = shipWidth * shipDraft;
+let biofouledArea = (shipWidth+2*foulingThickness) * (shipDraft + 2*foulingThickness);
 
-            // Wetted area increase due to biofouling
-            let biofouledArea = shipLength * (shipWidth + 2 * (shipDraft + foulingThickness));
-
-            // Drag force calculations
-            let cleanShipDrag = 0.5 * waterDensity * cleanCd * cleanShipArea * (shipVelocity ** 2);
-            let dirtyShipDrag = 0.5 * waterDensity * dirtyShipCd * biofouledArea * (shipVelocity ** 2);
+// Drag force calculations
+let cleanShipDrag = 0.5 * waterDensity * cleanCd * cleanShipArea * (shipVelocity ** 2);
+let dirtyShipDrag = 0.5 * waterDensity * dirtyShipCd * biofouledArea * (shipVelocity ** 2);
             let robotDragForce = numRobots * 0.5 * waterDensity * robotCd * robotArea * (shipVelocity ** 2);
 
             // Display drag forces
