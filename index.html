@@ -52,8 +52,15 @@
 
         <label>Number of Robots: <input type="number" id="numRobots" value="10" min="1" max="100" step="1" oninput="updateGraph()"></label><br>
         <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.05" step="0.005" oninput="updateGraph()"></label><br>
-        <label>Base Biofouling Growth Rate (r0): <input type="number" id="r0" value="0.02" step="0.005" min="0.01" max="0.05" oninput="updateGraph()"></label><br>
-        <label>Shear-dependent Removal Coefficient (k): <input type="number" id="k" value="0.2" step="0.05" min="0.1" max="0.5" oninput="updateGraph()"></label>
+
+        <!-- New Inputs for r0 and k -->
+        <label>Base Biofouling Growth Rate (r0): <span id="r0Value">0.02</span>
+            <input type="range" id="r0" min="0.01" max="0.05" step="0.001" value="0.02" oninput="updateGraph(); updateValue('r0Value', this.value)">
+        </label><br>
+
+        <label>Shear-Dependent Removal Coefficient (k): <span id="kValue">0.2</span>
+            <input type="range" id="k" min="0.1" max="0.5" step="0.01" value="0.2" oninput="updateGraph(); updateValue('kValue', this.value)">
+        </label><br>
     </div>
 
     <h3 id="dragValues"></h3>
@@ -84,20 +91,28 @@
             let r0 = parseFloat(document.getElementById("r0").value);
             let k = parseFloat(document.getElementById("k").value);
 
-            let waterDensity = 1025;
-            let shipVelocity = velocityKnots * 0.51444;
+            let waterDensity = 1025; // kg/m³
+            let shipVelocity = velocityKnots * 0.51444; // Convert knots to m/s
 
+            // Biofouling growth rate dependent on velocity
             let rV = r0 * Math.exp(-k * shipVelocity);
+
+            // Biofouling thickness over time (velocity dependent)
             let foulingThickness = maxBiofoul * (1 - Math.exp(-rV * t));
 
+            // Adjusted drag coefficient due to fouling
             let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDraft);
+
+            // Frontal area of ship (clean and biofouled)
             let cleanShipArea = shipWidth * shipDraft;
             let biofouledArea = (shipWidth + 2 * foulingThickness) * (shipDraft + 2 * foulingThickness);
 
+            // Drag force calculations
             let cleanShipDrag = 0.5 * waterDensity * cleanCd * cleanShipArea * (shipVelocity ** 2);
             let dirtyShipDrag = 0.5 * waterDensity * dirtyShipCd * biofouledArea * (shipVelocity ** 2);
             let robotDragForce = numRobots * 0.5 * waterDensity * robotCd * robotArea * (shipVelocity ** 2);
 
+            // Display drag forces
             if (t === 0) {
                 document.getElementById("dragValues").innerHTML = `
                     <b>Drag Forces:</b><br>
@@ -106,12 +121,51 @@
                 `;
             }
 
-            let dragCleanShip = 100;
+            // Percentage changes relative to clean ship
+            let dragCleanShip = 100;  // Baseline
             let dragDirtyShip = ((dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
             let dragWithRobot = ((robotDragForce) / cleanShipDrag) * 100 + 100;
 
             return { dragCleanShip, dragDirtyShip, dragWithRobot };
         }
+
+        function updateGraph() {
+            let time = Array.from({ length: 19 }, (_, i) => i * 10);
+            let cleanData = [], dirtyData = [], robotData = [];
+
+            for (let t of time) {
+                let dragValues = calculateDragPercentage(t);
+                cleanData.push(dragValues.dragCleanShip);
+                dirtyData.push(dragValues.dragDirtyShip);
+                robotData.push(dragValues.dragWithRobot);
+            }
+
+            dragChart.data.labels = time;
+            dragChart.data.datasets[0].data = cleanData;
+            dragChart.data.datasets[1].data = dirtyData;
+            dragChart.data.datasets[2].data = robotData;
+            dragChart.update();
+        }
+
+        let ctx = document.getElementById("dragChart").getContext("2d");
+        let dragChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    { label: "% Drag Clean Ship", borderColor: "green", data: [], fill: false },
+                    { label: "% Drag Dirty Ship", borderColor: "red", data: [], fill: false },
+                    { label: "% Drag With Robot", borderColor: "blue", data: [], fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { 
+                    x: { title: { display: true, text: "Time (Days)" } }, 
+                    y: { title: { display: true, text: "% Drag" }, beginAtZero: false } 
+                }
+            }
+        });
 
         updateGraph();
     </script>
