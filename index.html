@@ -27,31 +27,31 @@
     </style>
 </head>
 <body>
-    <h2>Drag % vs Time (Days)</h2>
+    <h2>Drag Force against Time (Days)</h2>
 
     <div class="slider-container">
         <label>Robot Area (m²): <span id="robotAreaValue">0.1</span>
-            <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)">
+            <input type="range" id="robotArea" min="0.05" max="1" step="0.05" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)">
         </label><br>
 
         <label>Velocity (knots): <span id="velocityValue">10</span>
-            <input type="range" id="velocity" min="5" max="30" step="0.5" value="10" oninput="updateGraph(); updateValue('velocityValue', this.value)">
+            <input type="range" id="velocity" min="0" max="30" step="1" value="10" oninput="updateGraph(); updateValue('velocityValue', this.value)">
         </label><br>
 
-        <label>Ship Length (m): <input type="number" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label><br>
+        <label>Ship Length (m): <input type="number" id="shipLength" min="100" max="750" step="10" value="500" oninput="updateGraph()"></label><br>
         <label>Ship Width (m): <input type="number" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label><br>
         <label>Ship Draft (m): <input type="number" id="shipDraft" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label><br>
 
         <label>Clean Ship Cd: <span id="cleanCdValue">0.8</span>
-            <input type="range" id="cleanCd" min="0.5" max="1.5" step="0.01" value="0.8" oninput="updateGraph(); updateValue('cleanCdValue', this.value)">
+            <input type="range" id="cleanCd" min="0" max="1.5" step="0.1" value="0.8" oninput="updateGraph(); updateValue('cleanCdValue', this.value)">
         </label><br>
 
         <label>Robot Cd: <span id="robotCdValue">0.8</span>
-            <input type="range" id="robotCd" min="0.5" max="1.5" step="0.01" value="0.8" oninput="updateGraph(); updateValue('robotCdValue', this.value)">
+            <input type="range" id="robotCd" min="0" max="1.5" step="0.1" value="0.8" oninput="updateGraph(); updateValue('robotCdValue', this.value)">
         </label><br>
 
         <label>Number of Robots: <input type="number" id="numRobots" value="10" min="1" max="100" step="1" oninput="updateGraph()"></label><br>
-        <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.0045" step="0.0001" oninput="updateGraph()"></label>
+        <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.05" step="0.005" oninput="updateGraph()"></label>
     </div>
 
     <h3 id="dragValues"></h3>
@@ -105,7 +105,6 @@
                 document.getElementById("dragValues").innerHTML = `
                     <b>Drag Forces:</b><br>
                     Clean Ship: ${formatScientific(cleanShipDrag)}<br>
-                    Dirty Ship: ${formatScientific(dirtyShipDrag)}<br>
                     Robot Drag Force: ${formatScientific(robotDragForce)}
                 `;
             }
