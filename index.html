@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag % vs Time</title>
+    <title>Drag Force against Time</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -28,68 +28,114 @@
 </head>
 <body>
     <h2>Drag % vs Time (Days)</h2>
+
     <div class="slider-container">
-        <label>Robot Area (m²): <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)"> <span id="robotAreaValue">0.1</span></label><br>
-        <label>Velocity (m/s): <input type="range" id="velocity" min="5" max="20" step="0.5" value="10" oninput="updateGraph(); updateValue('velocityValue', this.value)"> <span id="velocityValue">10</span></label><br>
+        <label>Robot Area (m²): <span id="robotAreaValue">0.1</span>
+            <input type="range" id="robotArea" min="0.05" max="1" step="0.01" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)">
+        </label><br>
+
+        <label>Velocity (knots): <span id="velocityValue">10</span>
+            <input type="range" id="velocity" min="5" max="30" step="0.5" value="10" oninput="updateGraph(); updateValue('velocityValue', this.value)">
+        </label><br>
+
         <label>Ship Length (m): <input type="number" id="shipLength" min="100" max="500" step="10" value="500" oninput="updateGraph()"></label><br>
         <label>Ship Width (m): <input type="number" id="shipWidth" min="10" max="100" step="5" value="50" oninput="updateGraph()"></label><br>
-        <label>Ship Drag Height (m): <input type="number" id="shipDragHeight" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label><br>
-        <label>Clean Ship Cd: <input type="text" id="cleanCd" value="0.8" oninput="updateGraph()"></label><br>
-        <label>Robot Cd: <input type="text" id="robotCd" value="0.8" oninput="updateGraph()"></label><br>
-        <label>Number of Robots: <input type="text" id="numRobots" value="10" oninput="updateGraph()"></label><br>
-        <label>Max Biofouling Height (m): <input type="text" id="maxBiofoul" value="0.0045" oninput="updateGraph()"></label>
+        <label>Ship Draft (m): <input type="number" id="shipDraft" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label><br>
+
+        <label>Clean Ship Cd: <span id="cleanCdValue">0.8</span>
+            <input type="range" id="cleanCd" min="0.5" max="1.5" step="0.01" value="0.8" oninput="updateGraph(); updateValue('cleanCdValue', this.value)">
+        </label><br>
+
+        <label>Robot Cd: <span id="robotCdValue">0.8</span>
+            <input type="range" id="robotCd" min="0.5" max="1.5" step="0.01" value="0.8" oninput="updateGraph(); updateValue('robotCdValue', this.value)">
+        </label><br>
+
+        <label>Number of Robots: <input type="number" id="numRobots" value="10" min="1" max="100" step="1" oninput="updateGraph()"></label><br>
+        <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.0045" step="0.0001" oninput="updateGraph()"></label>
     </div>
+
+    <h3 id="dragValues"></h3>
+
     <div class="chart-container">
         <canvas id="dragChart"></canvas>
     </div>
+
     <script>
         function updateValue(id, value) {
             document.getElementById(id).innerText = value;
         }
-        
+
+        function formatScientific(value) {
+            return (value / 1e6).toPrecision(3) + " × 10⁶ N";
+        }
+
         function calculateDragPercentage(t) {
             let numRobots = parseFloat(document.getElementById("numRobots").value);
             let robotArea = parseFloat(document.getElementById("robotArea").value);
-            let velocity = parseFloat(document.getElementById("velocity").value);
+            let velocityKnots = parseFloat(document.getElementById("velocity").value);
             let cleanCd = parseFloat(document.getElementById("cleanCd").value);
             let robotCd = parseFloat(document.getElementById("robotCd").value);
             let shipWidth = parseFloat(document.getElementById("shipWidth").value);
-            let shipDragHeight = parseFloat(document.getElementById("shipDragHeight").value);
+            let shipDraft = parseFloat(document.getElementById("shipDraft").value);
+            let shipLength = parseFloat(document.getElementById("shipLength").value);
             let maxBiofoul = parseFloat(document.getElementById("maxBiofoul").value);
-            
-            let shipVelocity = velocity; 
+
+            let waterDensity = 1025; // kg/m³
+            let shipVelocity = velocityKnots * 0.51444; // Convert knots to m/s
+
+            // Biofouling thickness over time
             let foulingThickness = maxBiofoul / (1 + (maxBiofoul * 10000 - 1) * Math.exp(-0.1 * t));
-            let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDragHeight);
-            
-            let cleanShipDrag = 0.5 * 1025 * cleanCd * (shipWidth * shipDragHeight) * (shipVelocity ** 2);
-            let dirtyShipDrag = 0.5 * dirtyShipCd * 1025 * ((shipWidth + 2 * foulingThickness) * (shipDragHeight + foulingThickness)) * (shipVelocity ** 2);
-            let robotDragForce = numRobots * 0.5 * 1025 * robotCd * robotArea * (shipVelocity ** 2);
-            
-            let dragCleanShip = 100;
+
+            // Adjusted drag coefficient due to fouling
+            let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDraft);
+
+            // Wetted area of the ship (clean)
+            let cleanShipArea = shipLength * (shipWidth + 2 * shipDraft);
+
+            // Wetted area increase due to biofouling
+            let biofouledArea = shipLength * (shipWidth + 2 * (shipDraft + foulingThickness));
+
+            // Drag force calculations
+            let cleanShipDrag = 0.5 * waterDensity * cleanCd * cleanShipArea * (shipVelocity ** 2);
+            let dirtyShipDrag = 0.5 * waterDensity * dirtyShipCd * biofouledArea * (shipVelocity ** 2);
+            let robotDragForce = numRobots * 0.5 * waterDensity * robotCd * robotArea * (shipVelocity ** 2);
+
+            // Display drag forces
+            if (t === 0) {
+                document.getElementById("dragValues").innerHTML = `
+                    <b>Drag Forces:</b><br>
+                    Clean Ship: ${formatScientific(cleanShipDrag)}<br>
+                    Dirty Ship: ${formatScientific(dirtyShipDrag)}<br>
+                    Robot Drag Force: ${formatScientific(robotDragForce)}
+                `;
+            }
+
+            // Percentage changes relative to clean ship
+            let dragCleanShip = 100;  // Baseline
             let dragDirtyShip = ((dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
-            let dragWithRobot = (robotDragForce / cleanShipDrag) * 100 + 100;
-            
+            let dragWithRobot = ((robotDragForce) / cleanShipDrag) * 100 + 100;
+
             return { dragCleanShip, dragDirtyShip, dragWithRobot };
         }
-        
+
         function updateGraph() {
-            let time = Array.from({length: 19}, (_, i) => i * 10);
+            let time = Array.from({ length: 19 }, (_, i) => i * 10);
             let cleanData = [], dirtyData = [], robotData = [];
-            
+
             for (let t of time) {
                 let dragValues = calculateDragPercentage(t);
                 cleanData.push(dragValues.dragCleanShip);
                 dirtyData.push(dragValues.dragDirtyShip);
                 robotData.push(dragValues.dragWithRobot);
             }
-            
+
             dragChart.data.labels = time;
             dragChart.data.datasets[0].data = cleanData;
             dragChart.data.datasets[1].data = dirtyData;
             dragChart.data.datasets[2].data = robotData;
             dragChart.update();
         }
-        
+
         let ctx = document.getElementById("dragChart").getContext("2d");
         let dragChart = new Chart(ctx, {
             type: "line",
@@ -103,10 +149,13 @@
             },
             options: {
                 responsive: true,
-                scales: { x: { title: { display: true, text: "Time (Days)" } }, y: { title: { display: true, text: "% Drag" } } }
+                scales: { 
+                    x: { title: { display: true, text: "Time (Days)" } }, 
+                    y: { title: { display: true, text: "% Drag" }, beginAtZero: false } 
+                }
             }
         });
-        
+
         updateGraph();
     </script>
 </body>
