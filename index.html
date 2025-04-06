@@ -180,18 +180,18 @@
             },
             options: {
                 responsive: true,
-                scales: {
-                    x: {
-                        title: { display: true, text: "Time (Days)" },
-                        ticks: { stepSize: 5 }
-                    },
-                    y: {
-                        title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
-                        beginAtZero: false
-                    }
-                }
-            }
-        });
+               scales: {
+    x: {
+        title: { display: true, text: "Time (Days)" },
+        ticks: { stepSize: 5 },
+        min: 0,   // set minimum value explicitly
+        max: 90   // set maximum value explicitly
+    },
+    y: {
+        title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
+        beginAtZero: false
+    }
+});
 
         let percentChart = new Chart(document.getElementById("percentChart").getContext("2d"), {
             type: "line",
@@ -205,17 +205,17 @@
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        title: { display: true, text: "Time (Days)" },
-                        ticks: { stepSize: 5 }
-                    },
-                    y: {
-                        title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" },
-                        min: 100
-                    }
-                }
-            }
-        });
+    x: {
+        title: { display: true, text: "Time (Days)" },
+        ticks: { stepSize: 5 },
+        min: 0,   // set minimum value explicitly
+        max: 90   // set maximum value explicitly
+    },
+    y: {
+        title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
+        beginAtZero: false
+    }
+});
 
         updateGraph();
     </script>
