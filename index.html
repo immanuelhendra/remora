@@ -128,7 +128,7 @@
         }
 
         function updateGraph() {
-            let time = Array.from({ length: 91 }, (_, i) => i); // 0 to 90
+            let time = Array.from({ length: 91 }, (_, i) => i);
             let cleanData = [], dirtyData = [], robotData = [], dirtyPercent = [], robotPercent = [];
             let sfoc = parseFloat(document.getElementById("sfoc").value);
             let eta = parseFloat(document.getElementById("efficiency").value);
@@ -137,14 +137,14 @@
                 let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
                 let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
                 let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
-                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
+                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : null;
 
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
                 robotData.push(fuelRobot);
 
                 dirtyPercent.push((fuelDirty / fuelClean) * 100);
-                robotPercent.push((fuelRobot / fuelClean) * 100);
+                robotPercent.push(fuelRobot ? (fuelRobot / fuelClean) * 100 : null);
 
                 if (t === 0) {
                     document.getElementById("dragValues").innerHTML = `
@@ -173,9 +173,9 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false },
-                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false },
-                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false }
+                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false, stepped: true },
+                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false, stepped: true },
+                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false, showLine: false, pointRadius: 4, pointStyle: 'circle' }
                 ]
             },
             options: {
@@ -183,9 +183,7 @@
                 scales: {
                     x: {
                         title: { display: true, text: "Time (Days)" },
-                        ticks: {
-                            stepSize: 5
-                        }
+                        ticks: { stepSize: 5 }
                     },
                     y: {
                         title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
@@ -200,8 +198,8 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false },
-                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false }
+                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false, stepped: true },
+                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false, showLine: false, pointRadius: 4, pointStyle: 'circle' }
                 ]
             },
             options: {
@@ -209,9 +207,7 @@
                 scales: {
                     x: {
                         title: { display: true, text: "Time (Days)" },
-                        ticks: {
-                            stepSize: 5
-                        }
+                        ticks: { stepSize: 5 }
                     },
                     y: {
                         title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" },
