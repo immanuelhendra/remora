@@ -91,8 +91,8 @@
         }
 
         function calculateFuelRate(F_D, V, sfoc, eta) {
-            const P = (F_D * V) / eta;
-            const fuelRate_grams_per_hour = (P * sfoc) / (1000);
+            const P = (F_D * V);
+            const fuelRate_grams_per_hour = (P * sfoc) / 1000;
             const fuelRate_tons_per_day = (fuelRate_grams_per_hour / 1e6) * 24;
             return fuelRate_tons_per_day;
         }
@@ -137,7 +137,7 @@
                 let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
                 let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
                 let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
-                let fuelRobot = t % 10 === 0 && t !== 0 ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
+                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
 
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
@@ -182,7 +182,7 @@
                 responsive: true,
                 scales: {
                     x: { title: { display: true, text: "Time (Days)" } },
-                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: false }
+                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: true }
                 }
             }
         });
