@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag Force against Time</title>
+    <title>Fuel Consumption Rate vs Time</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -27,7 +27,7 @@
     </style>
 </head>
 <body>
-    <h2>Drag Force against Time (Days)</h2>
+    <h2>Fuel Consumption Rate vs Time (Days)</h2>
 
     <div class="slider-container">
         <label>Robot Area (m²): <span id="robotAreaValue">0.1</span>
@@ -53,7 +53,6 @@
         <label>Number of Robots: <input type="number" id="numRobots" value="10" min="1" max="100" step="1" oninput="updateGraph()"></label><br>
         <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.05" step="0.005" oninput="updateGraph()"></label><br>
 
-        <!-- New Inputs for r0 and k -->
         <label>Base Biofouling Growth Rate (r0): <span id="r0Value">0.02</span>
             <input type="range" id="r0" min="0.01" max="0.05" step="0.001" value="0.02" oninput="updateGraph(); updateValue('r0Value', this.value)">
         </label><br>
@@ -61,6 +60,9 @@
         <label>Shear-Dependent Removal Coefficient (k): <span id="kValue">0.2</span>
             <input type="range" id="k" min="0.1" max="0.5" step="0.01" value="0.2" oninput="updateGraph(); updateValue('kValue', this.value)">
         </label><br>
+
+        <label>Propulsive Efficiency (η): <input type="number" id="efficiency" value="0.6" min="0.1" max="1" step="0.01" oninput="updateGraph()"></label><br>
+        <label>Specific Fuel Oil Consumption (SFOC) (g/kWh): <input type="number" id="sfoc" value="200" min="100" max="300" step="10" oninput="updateGraph()"></label><br>
     </div>
 
     <h3 id="dragValues"></h3>
@@ -74,11 +76,13 @@
             document.getElementById(id).innerText = value;
         }
 
-        function formatScientific(value) {
-            return (value / 1e6).toPrecision(3) + " × 10⁶ N";
+        function calculateFuelRate(F_D, V, sfoc, eta) {
+            const P = (F_D * V) / eta; // power in watts
+            const fuelRate = (P * sfoc) / (3600 * 1000); // g/s => kg/s
+            return fuelRate;
         }
 
-        function calculateDragPercentage(t) {
+        function calculateDragForces(t) {
             let numRobots = parseFloat(document.getElementById("numRobots").value);
             let robotArea = parseFloat(document.getElementById("robotArea").value);
             let velocityKnots = parseFloat(document.getElementById("velocity").value);
@@ -91,53 +95,47 @@
             let r0 = parseFloat(document.getElementById("r0").value);
             let k = parseFloat(document.getElementById("k").value);
 
-            let waterDensity = 1025; // kg/m³
-            let shipVelocity = velocityKnots * 0.51444; // Convert knots to m/s
+            let waterDensity = 1025;
+            let shipVelocity = velocityKnots * 0.51444;
 
-            // Biofouling growth rate dependent on velocity
             let rV = r0 * Math.exp(-k * shipVelocity);
-
-            // Biofouling thickness over time (velocity dependent)
             let foulingThickness = maxBiofoul * (1 - Math.exp(-rV * t));
 
-            // Adjusted drag coefficient due to fouling
             let dirtyShipCd = cleanCd * (1 + 30 * foulingThickness / shipDraft);
-
-            // Frontal area of ship (clean and biofouled)
             let cleanShipArea = shipWidth * shipDraft;
             let biofouledArea = (shipWidth + 2 * foulingThickness) * (shipDraft + 2 * foulingThickness);
 
-            // Drag force calculations
             let cleanShipDrag = 0.5 * waterDensity * cleanCd * cleanShipArea * (shipVelocity ** 2);
             let dirtyShipDrag = 0.5 * waterDensity * dirtyShipCd * biofouledArea * (shipVelocity ** 2);
             let robotDragForce = numRobots * 0.5 * waterDensity * robotCd * robotArea * (shipVelocity ** 2);
 
-            // Display drag forces
-            if (t === 0) {
-                document.getElementById("dragValues").innerHTML = `
-                    <b>Drag Forces:</b><br>
-                    Clean Ship: ${formatScientific(cleanShipDrag)}<br>
-                    Robot Drag Force: ${formatScientific(robotDragForce)}
-                `;
-            }
-
-            // Percentage changes relative to clean ship
-            let dragCleanShip = 100;  // Baseline
-            let dragDirtyShip = ((dirtyShipDrag - cleanShipDrag) / cleanShipDrag) * 100 + 100;
-            let dragWithRobot = ((robotDragForce) / cleanShipDrag) * 100 + 100;
-
-            return { dragCleanShip, dragDirtyShip, dragWithRobot };
+            return { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity };
         }
 
         function updateGraph() {
             let time = Array.from({ length: 19 }, (_, i) => i * 10);
             let cleanData = [], dirtyData = [], robotData = [];
+            let sfoc = parseFloat(document.getElementById("sfoc").value);
+            let eta = parseFloat(document.getElementById("efficiency").value);
 
             for (let t of time) {
-                let dragValues = calculateDragPercentage(t);
-                cleanData.push(dragValues.dragCleanShip);
-                dirtyData.push(dragValues.dragDirtyShip);
-                robotData.push(dragValues.dragWithRobot);
+                let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
+                let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
+                let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
+                let fuelRobot = calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta);
+
+                cleanData.push(fuelClean);
+                dirtyData.push(fuelDirty);
+                robotData.push(fuelRobot);
+
+                if (t === 0) {
+                    document.getElementById("dragValues").innerHTML = `
+                        <b>Initial Drag Forces:</b><br>
+                        Clean Ship: ${(cleanShipDrag / 1e6).toFixed(2)} ×10⁶ N<br>
+                        Robot Drag Force: ${(robotDragForce / 1e6).toFixed(2)} ×10⁶ N<br>
+                        Fuel Rate Clean: ${fuelClean.toFixed(2)} kg/s
+                    `;
+                }
             }
 
             dragChart.data.labels = time;
@@ -153,16 +151,16 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "% Drag Clean Ship", borderColor: "green", data: [], fill: false },
-                    { label: "% Drag Dirty Ship", borderColor: "red", data: [], fill: false },
-                    { label: "% Drag With Robot", borderColor: "blue", data: [], fill: false }
+                    { label: "Fuel Rate Clean Ship (kg/s)", borderColor: "green", data: [], fill: false },
+                    { label: "Fuel Rate Dirty Ship (kg/s)", borderColor: "red", data: [], fill: false },
+                    { label: "Fuel Rate With Robot (kg/s)", borderColor: "blue", data: [], fill: false }
                 ]
             },
             options: {
                 responsive: true,
-                scales: { 
-                    x: { title: { display: true, text: "Time (Days)" } }, 
-                    y: { title: { display: true, text: "% Drag" }, beginAtZero: false } 
+                scales: {
+                    x: { title: { display: true, text: "Time (Days)" } },
+                    y: { title: { display: true, text: "Fuel Consumption Rate (kg/s)" }, beginAtZero: true }
                 }
             }
         });
