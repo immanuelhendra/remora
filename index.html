@@ -32,7 +32,7 @@
     </style>
 </head>
 <body>
-    <h2>Fuel Consumption Rate vs Time (With Periodic Cleaning Interventions)</h2>
+    <h2>Fuel Consumption Rate vs Time (Days)</h2>
 
     <div class="slider-container">
         <!-- [All slider and input controls remain unchanged] -->
@@ -51,15 +51,15 @@
         <label>Ship Draft (m): <input type="number" id="shipDraft" min="1" max="20" step="1" value="10" oninput="updateGraph()"></label><br>
 
         <label>Clean Ship Cd: <span id="cleanCdValue">0.07</span>
-            <input type="range" id="cleanCd" min="0.01" max="0.1" step="0.01" value="0.07" oninput="updateGraph(); updateValue('cleanCdValue', this.value)">
+            <input type="range" id="cleanCd" min="0" max="0.1" step="0.01" value="0.07" oninput="updateGraph(); updateValue('cleanCdValue', this.value)">
         </label><br>
 
         <label>Robot Cd: <span id="robotCdValue">0.07</span>
-            <input type="range" id="robotCd" min="0.01" max="0.1" step="0.01" value="0.07" oninput="updateGraph(); updateValue('robotCdValue', this.value)">
+            <input type="range" id="robotCd" min="0" max="0.1" step="0.01" value="0.07" oninput="updateGraph(); updateValue('robotCdValue', this.value)">
         </label><br>
 
         <label>Number of Robots: <input type="number" id="numRobots" value="10" min="1" max="100" step="1" oninput="updateGraph()"></label><br>
-        <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.05" step="0.005" oninput="updateGraph()"></label><br>
+        <label>Max Biofouling Height (m): <input type="number" id="maxBiofoul" value="0.005" step="0.005" oninput="updateGraph()"></label><br>
 
         <label>Base Biofouling Growth Rate (r0): <span id="r0Value">0.02</span>
             <input type="range" id="r0" min="0.01" max="0.05" step="0.001" value="0.02" oninput="updateGraph(); updateValue('r0Value', this.value)">
@@ -91,8 +91,8 @@
         }
 
         function calculateFuelRate(F_D, V, sfoc, eta) {
-            const P = (F_D * V);
-            const fuelRate_grams_per_hour = (P * sfoc) / 1000;
+            const P = (F_D * V) / eta;
+            const fuelRate_grams_per_hour = (P * sfoc) / (1000);
             const fuelRate_tons_per_day = (fuelRate_grams_per_hour / 1e6) * 24;
             return fuelRate_tons_per_day;
         }
@@ -128,7 +128,7 @@
         }
 
         function updateGraph() {
-            let time = Array.from({ length: 91 }, (_, i) => i);
+            let time = Array.from({ length: 19 }, (_, i) => i * 10);
             let cleanData = [], dirtyData = [], robotData = [], dirtyPercent = [], robotPercent = [];
             let sfoc = parseFloat(document.getElementById("sfoc").value);
             let eta = parseFloat(document.getElementById("efficiency").value);
@@ -137,7 +137,7 @@
                 let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
                 let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
                 let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
-                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
+                let fuelRobot = calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta);
 
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
@@ -173,22 +173,16 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false, tension: 0.1, pointRadius: 0 },
-                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false, tension: 0.1, pointRadius: 0 },
-                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false, tension: 0.1, pointRadius: 0 }
+                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false },
+                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false },
+                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false }
                 ]
             },
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        title: { display: true, text: "Time (Days)" },
-                        ticks: { stepSize: 5 }
-                    },
-                    y: {
-                        title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
-                        beginAtZero: false
-                    }
+                    x: { title: { display: true, text: "Time (Days)" } },
+                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: false }
                 }
             }
         });
@@ -198,17 +192,14 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false, tension: 0.1, pointRadius: 0 },
-                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false, tension: 0.1, pointRadius: 0 }
+                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false },
+                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false }
                 ]
             },
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        title: { display: true, text: "Time (Days)" },
-                        ticks: { stepSize: 5 }
-                    },
+                    x: { title: { display: true, text: "Time (Days)" } },
                     y: {
                         title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" },
                         min: 100
