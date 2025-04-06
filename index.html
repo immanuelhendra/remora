@@ -92,7 +92,7 @@
 
         function calculateFuelRate(F_D, V, sfoc, eta) {
             const P = (F_D * V) / eta;
-            const fuelRate_grams_per_hour = (P * sfoc) / (3600 * 1000);
+            const fuelRate_grams_per_hour = (P * sfoc) / (3600);
             const fuelRate_tons_per_day = (fuelRate_grams_per_hour / 1e6) * 24;
             return fuelRate_tons_per_day;
         }
@@ -182,7 +182,7 @@
                 responsive: true,
                 scales: {
                     x: { title: { display: true, text: "Time (Days)" } },
-                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: true }
+                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: false }
                 }
             }
         });
