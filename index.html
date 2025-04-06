@@ -97,9 +97,6 @@
         }
 
         function calculateDragForces(t) {
-            // [No changes to this function]
-            // [Same content as before]
-            // Extract input values and calculate drag forces
             let numRobots = parseFloat(document.getElementById("numRobots").value);
             let robotArea = parseFloat(document.getElementById("robotArea").value);
             let velocityKnots = parseFloat(document.getElementById("velocity").value);
@@ -202,7 +199,10 @@
                 responsive: true,
                 scales: {
                     x: { title: { display: true, text: "Time (Days)" } },
-                    y: { title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" }, beginAtZero: true }
+                    y: {
+                        title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" },
+                        min: 100
+                    }
                 }
             }
         });
