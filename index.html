@@ -128,7 +128,7 @@
         }
 
         function updateGraph() {
-             let time = Array.from({ length: 19 }, (_, i) => i * 5);
+            let time = Array.from({ length: 91 }, (_, i) => i);
             let cleanData = [], dirtyData = [], robotData = [], dirtyPercent = [], robotPercent = [];
             let sfoc = parseFloat(document.getElementById("sfoc").value);
             let eta = parseFloat(document.getElementById("efficiency").value);
@@ -183,7 +183,7 @@
                 scales: {
                     x: {
                         title: { display: true, text: "Time (Days)" },
-                       
+                        ticks: { stepSize: 5 }
                     },
                     y: {
                         title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
