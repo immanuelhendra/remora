@@ -92,8 +92,9 @@
 
         function calculateFuelRate(F_D, V, sfoc, eta) {
             const P = (F_D * V) / eta;
-            const fuelRate = (P * sfoc) / (3600 * 1000);
-            return fuelRate;
+            const fuelRate_grams_per_hour = (P * sfoc) / (3600 * 1000);
+            const fuelRate_tons_per_day = (fuelRate_grams_per_hour / 1e6) * 24;
+            return fuelRate_tons_per_day;
         }
 
         function calculateDragForces(t) {
@@ -150,7 +151,7 @@
                         <b>Initial Drag Forces:</b><br>
                         Clean Ship: ${(cleanShipDrag / 1e6).toFixed(2)} ×10⁶ N<br>
                         Robot Drag Force: ${(robotDragForce / 1e6).toFixed(2)} ×10⁶ N<br>
-                        Fuel Rate Clean: ${fuelClean.toFixed(2)} kg/s
+                        Fuel Rate Clean: ${fuelClean.toFixed(2)} tons/day
                     `;
                 }
             }
@@ -172,16 +173,16 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Fuel Rate Clean Ship (kg/s)", borderColor: "green", data: [], fill: false },
-                    { label: "Fuel Rate Dirty Ship (kg/s)", borderColor: "red", data: [], fill: false },
-                    { label: "Fuel Rate With Robot (kg/s)", borderColor: "blue", data: [], fill: false }
+                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false },
+                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false },
+                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false }
                 ]
             },
             options: {
                 responsive: true,
                 scales: {
                     x: { title: { display: true, text: "Time (Days)" } },
-                    y: { title: { display: true, text: "Fuel Consumption Rate (kg/s)" }, beginAtZero: false }
+                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: true }
                 }
             }
         });
