@@ -173,9 +173,9 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false, stepped: true },
-                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false, stepped: true },
-                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false, stepped: true }
+                    { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false, tension: 0.1, pointRadius: 0 },
+                    { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false, tension: 0.1, pointRadius: 0 },
+                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false, tension: 0.1, pointRadius: 0 }
                 ]
             },
             options: {
@@ -198,8 +198,8 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false, stepped: true },
-                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false, stepped: true }
+                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false, tension: 0.1, pointRadius: 0 },
+                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false, tension: 0.1, pointRadius: 0 }
                 ]
             },
             options: {
