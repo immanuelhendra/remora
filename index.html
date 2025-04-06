@@ -137,7 +137,7 @@
                 let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
                 let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
                 let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
-                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
+                let fuelRobot = (t % 20 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
 
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
