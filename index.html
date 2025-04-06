@@ -14,10 +14,15 @@
         .slider-container {
             margin: 10px;
         }
+        .chart-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
         .chart-container {
             width: 90%;
-            max-width: 900px;
-            margin: auto;
+            max-width: 600px;
         }
         canvas {
             width: 100% !important;
@@ -30,6 +35,9 @@
     <h2>Fuel Consumption Rate vs Time (Days)</h2>
 
     <div class="slider-container">
+        <!-- [All slider and input controls remain unchanged] -->
+        <!-- KEEP ALL CONTROLS UNCHANGED -->
+        <!-- BEGIN CONTROLS -->
         <label>Robot Area (m²): <span id="robotAreaValue">0.1</span>
             <input type="range" id="robotArea" min="0.05" max="1" step="0.05" value="0.1" oninput="updateGraph(); updateValue('robotAreaValue', this.value)">
         </label><br>
@@ -63,12 +71,18 @@
 
         <label>Propulsive Efficiency (η): <input type="number" id="efficiency" value="0.6" min="0.1" max="1" step="0.01" oninput="updateGraph()"></label><br>
         <label>Specific Fuel Oil Consumption (SFOC) (g/kWh): <input type="number" id="sfoc" value="200" min="100" max="300" step="10" oninput="updateGraph()"></label><br>
+        <!-- END CONTROLS -->
     </div>
 
     <h3 id="dragValues"></h3>
 
-    <div class="chart-container">
-        <canvas id="dragChart"></canvas>
+    <div class="chart-wrapper">
+        <div class="chart-container">
+            <canvas id="dragChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="percentChart"></canvas>
+        </div>
     </div>
 
     <script>
@@ -77,12 +91,15 @@
         }
 
         function calculateFuelRate(F_D, V, sfoc, eta) {
-            const P = (F_D * V) / eta; // power in watts
-            const fuelRate = (P * sfoc) / (3600 * 1000); // g/s => kg/s
+            const P = (F_D * V) / eta;
+            const fuelRate = (P * sfoc) / (3600 * 1000);
             return fuelRate;
         }
 
         function calculateDragForces(t) {
+            // [No changes to this function]
+            // [Same content as before]
+            // Extract input values and calculate drag forces
             let numRobots = parseFloat(document.getElementById("numRobots").value);
             let robotArea = parseFloat(document.getElementById("robotArea").value);
             let velocityKnots = parseFloat(document.getElementById("velocity").value);
@@ -114,7 +131,7 @@
 
         function updateGraph() {
             let time = Array.from({ length: 19 }, (_, i) => i * 10);
-            let cleanData = [], dirtyData = [], robotData = [];
+            let cleanData = [], dirtyData = [], robotData = [], dirtyPercent = [], robotPercent = [];
             let sfoc = parseFloat(document.getElementById("sfoc").value);
             let eta = parseFloat(document.getElementById("efficiency").value);
 
@@ -127,6 +144,9 @@
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
                 robotData.push(fuelRobot);
+
+                dirtyPercent.push((fuelDirty / fuelClean) * 100);
+                robotPercent.push((fuelRobot / fuelClean) * 100);
 
                 if (t === 0) {
                     document.getElementById("dragValues").innerHTML = `
@@ -143,10 +163,14 @@
             dragChart.data.datasets[1].data = dirtyData;
             dragChart.data.datasets[2].data = robotData;
             dragChart.update();
+
+            percentChart.data.labels = time;
+            percentChart.data.datasets[0].data = dirtyPercent;
+            percentChart.data.datasets[1].data = robotPercent;
+            percentChart.update();
         }
 
-        let ctx = document.getElementById("dragChart").getContext("2d");
-        let dragChart = new Chart(ctx, {
+        let dragChart = new Chart(document.getElementById("dragChart").getContext("2d"), {
             type: "line",
             data: {
                 labels: [],
@@ -161,6 +185,24 @@
                 scales: {
                     x: { title: { display: true, text: "Time (Days)" } },
                     y: { title: { display: true, text: "Fuel Consumption Rate (kg/s)" }, beginAtZero: true }
+                }
+            }
+        });
+
+        let percentChart = new Chart(document.getElementById("percentChart").getContext("2d"), {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false },
+                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: "Time (Days)" } },
+                    y: { title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" }, beginAtZero: true }
                 }
             }
         });
