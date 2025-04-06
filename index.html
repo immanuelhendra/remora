@@ -32,7 +32,7 @@
     </style>
 </head>
 <body>
-    <h2>Fuel Consumption Rate vs Time (Days)</h2>
+    <h2>Fuel Consumption Rate vs Time (With Periodic Cleaning Interventions)</h2>
 
     <div class="slider-container">
         <!-- [All slider and input controls remain unchanged] -->
@@ -137,14 +137,14 @@
                 let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
                 let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
                 let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
-                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : null;
+                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
 
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
                 robotData.push(fuelRobot);
 
                 dirtyPercent.push((fuelDirty / fuelClean) * 100);
-                robotPercent.push(fuelRobot ? (fuelRobot / fuelClean) * 100 : null);
+                robotPercent.push((fuelRobot / fuelClean) * 100);
 
                 if (t === 0) {
                     document.getElementById("dragValues").innerHTML = `
@@ -175,7 +175,7 @@
                 datasets: [
                     { label: "Fuel Rate Clean Ship (tons/day)", borderColor: "green", data: [], fill: false, stepped: true },
                     { label: "Fuel Rate Dirty Ship (tons/day)", borderColor: "red", data: [], fill: false, stepped: true },
-                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false, showLine: false, pointRadius: 4, pointStyle: 'circle' }
+                    { label: "Fuel Rate With Robot (tons/day)", borderColor: "blue", data: [], fill: false, stepped: true }
                 ]
             },
             options: {
@@ -199,7 +199,7 @@
                 labels: [],
                 datasets: [
                     { label: "Dirty Ship Fuel Rate (%)", borderColor: "red", data: [], fill: false, stepped: true },
-                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false, showLine: false, pointRadius: 4, pointStyle: 'circle' }
+                    { label: "With Robot Fuel Rate (%)", borderColor: "blue", data: [], fill: false, stepped: true }
                 ]
             },
             options: {
