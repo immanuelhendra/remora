@@ -128,7 +128,7 @@
         }
 
         function updateGraph() {
-            let time = Array.from({ length: 19 }, (_, i) => i * 5);
+            let time = Array.from({ length: 91 }, (_, i) => i); // 0 to 90
             let cleanData = [], dirtyData = [], robotData = [], dirtyPercent = [], robotPercent = [];
             let sfoc = parseFloat(document.getElementById("sfoc").value);
             let eta = parseFloat(document.getElementById("efficiency").value);
@@ -137,7 +137,7 @@
                 let { cleanShipDrag, dirtyShipDrag, robotDragForce, shipVelocity } = calculateDragForces(t);
                 let fuelClean = calculateFuelRate(cleanShipDrag, shipVelocity, sfoc, eta);
                 let fuelDirty = calculateFuelRate(dirtyShipDrag, shipVelocity, sfoc, eta);
-                let fuelRobot = (t % 20 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
+                let fuelRobot = (t % 10 === 0 && t !== 0) ? calculateFuelRate(cleanShipDrag + robotDragForce, shipVelocity, sfoc, eta) : fuelClean;
 
                 cleanData.push(fuelClean);
                 dirtyData.push(fuelDirty);
@@ -181,8 +181,16 @@
             options: {
                 responsive: true,
                 scales: {
-                    x: { title: { display: true, text: "Time (Days)" } },
-                    y: { title: { display: true, text: "Fuel Consumption Rate (tons/day)" }, beginAtZero: false }
+                    x: {
+                        title: { display: true, text: "Time (Days)" },
+                        ticks: {
+                            stepSize: 5
+                        }
+                    },
+                    y: {
+                        title: { display: true, text: "Fuel Consumption Rate (tons/day)" },
+                        beginAtZero: false
+                    }
                 }
             }
         });
@@ -199,7 +207,12 @@
             options: {
                 responsive: true,
                 scales: {
-                    x: { title: { display: true, text: "Time (Days)" } },
+                    x: {
+                        title: { display: true, text: "Time (Days)" },
+                        ticks: {
+                            stepSize: 5
+                        }
+                    },
                     y: {
                         title: { display: true, text: "Fuel Consumption Rate (% of Clean Ship)" },
                         min: 100
